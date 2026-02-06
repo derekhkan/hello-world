@@ -191,6 +191,13 @@ def generate_gemini_background(
     else:
         aspect = "16:9"
 
+    # Try multiple model names — availability depends on API tier
+    MODEL_CANDIDATES = [
+        "gemini-2.0-flash-exp",
+        "gemini-2.0-flash-preview-image-generation",
+        "imagen-3.0-generate-002",
+    ]
+
     try:
         client = genai.Client(api_key=api_key)
 
@@ -204,35 +211,34 @@ def generate_gemini_background(
         ]
 
         generate_content_config = types.GenerateContentConfig(
-            image_config=types.ImageConfig(
-                aspect_ratio=aspect,
-                image_size="1K",
-            ),
             response_modalities=["IMAGE", "TEXT"],
         )
 
-        # Stream response and collect image data
-        for chunk in client.models.generate_content_stream(
-            model="gemini-2.5-flash-preview-04-17",
-            contents=contents,
-            config=generate_content_config,
-        ):
-            if chunk.parts is None:
+        for model_name in MODEL_CANDIDATES:
+            try:
+                logger.info("Trying Gemini model: %s", model_name)
+                for chunk in client.models.generate_content_stream(
+                    model=model_name,
+                    contents=contents,
+                    config=generate_content_config,
+                ):
+                    if chunk.parts is None:
+                        continue
+                    for part in chunk.parts:
+                        if part.inline_data and part.inline_data.data:
+                            ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".png"
+                            tmp_path = Path(f"/tmp/gemini_{uuid.uuid4().hex[:8]}{ext}")
+                            tmp_path.write_bytes(part.inline_data.data)
+
+                            img = Image.open(tmp_path).convert("RGB")
+                            tmp_path.unlink(missing_ok=True)
+
+                            img = _center_crop_resize(img, size)
+                            logger.info("Gemini generated B&W gym background via %s", model_name)
+                            return img
+            except Exception as model_err:
+                logger.info("Model %s unavailable: %s", model_name, model_err)
                 continue
-            for part in chunk.parts:
-                if part.inline_data and part.inline_data.data:
-                    # Save to temp file, then open with Pillow
-                    ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".png"
-                    tmp_path = Path(f"/tmp/gemini_{uuid.uuid4().hex[:8]}{ext}")
-                    tmp_path.write_bytes(part.inline_data.data)
-
-                    img = Image.open(tmp_path).convert("RGB")
-                    tmp_path.unlink(missing_ok=True)
-
-                    # Resize to target size
-                    img = _center_crop_resize(img, size)
-                    logger.info("Gemini generated B&W gym background (%s)", aspect)
-                    return img
 
     except Exception as e:
         logger.warning("Gemini image generation failed: %s", e)
