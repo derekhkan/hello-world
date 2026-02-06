@@ -1,0 +1,25 @@
+# Secrets
+config.yaml
+*.session
+*.json.enc
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# Media uploads (local only)
+media/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

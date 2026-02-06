@@ -1,0 +1,67 @@
+# Instagram Automation Agent Configuration
+# Copy this file to config.yaml and fill in your values.
+# NEVER commit config.yaml — it contains secrets.
+
+account:
+  username: "your_username"
+  password: "your_password"
+
+# Content publishing settings
+content:
+  # Directory containing media files to post
+  media_dir: "./media"
+
+  # Posting schedule (24-hour format, timezone of the machine)
+  schedule:
+    posts:
+      enabled: true
+      times: ["09:00", "13:00", "18:00"]
+    reels:
+      enabled: true
+      times: ["12:00", "20:00"]
+    stories:
+      enabled: true
+      times: ["08:00", "15:00", "21:00"]
+
+  # Default caption settings
+  defaults:
+    hashtags:
+      - "#instagram"
+      - "#content"
+    location: null  # Optional: location ID for tagging
+
+# Engagement settings — interact with other accounts
+engagement:
+  enabled: true
+
+  # Accounts to engage with (like + comment on their posts)
+  target_accounts:
+    - "account_one"
+    - "account_two"
+
+  # Discover new relevant accounts via hashtags
+  discovery_hashtags:
+    - "photography"
+    - "travel"
+
+  # How many posts to like per target account per run
+  likes_per_account: 3
+
+  # Whether to leave comments
+  commenting:
+    enabled: true
+    # Pool of comments chosen at random
+    templates:
+      - "Great post! Love this content."
+      - "This is amazing! Keep it up."
+      - "Really inspiring work!"
+
+  # Rate-limit delays (seconds) to avoid Instagram throttling
+  delay:
+    min_seconds: 30
+    max_seconds: 90
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "agent.log"
