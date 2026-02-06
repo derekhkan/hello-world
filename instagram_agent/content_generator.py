@@ -118,7 +118,10 @@ def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    # League Spartan Bold is the preferred font — bundled in fonts/
+    project_font = Path(__file__).resolve().parent.parent / "fonts" / "LeagueSpartan-Bold.ttf"
     candidates = [
+        str(project_font),
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
@@ -448,11 +451,12 @@ def generate_slideshow_reel(
             "Install it with: pip install moviepy"
         )
 
-    palettes = palettes or DEFAULT_PALETTES
+    import numpy as np
+
     clips = []
-    for i, text in enumerate(texts):
-        img = generate_image(text, size=size, palette=palettes[i % len(palettes)])
-        import numpy as np
+    for text in texts:
+        # Each slide gets its own unique B&W gym background via generate_image()
+        img = generate_image(text, size=size)
         arr = np.array(img)
         clip = ImageClip(arr, duration=duration_per_slide)
         clips.append(clip)
