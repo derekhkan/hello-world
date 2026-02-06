@@ -154,6 +154,38 @@ class ContentManager:
             logger.exception("Failed to publish %s from %s", kind, media_path)
             return None
 
+    # ------------------------------------------------------------------
+    # Direct-publish helpers (used by the calendar scheduler)
+    # ------------------------------------------------------------------
+
+    def publish_file_as_post(self, path: Path, caption: str) -> Media:
+        """Publish a specific file as a post (used by the content calendar)."""
+        ext = path.suffix.lower()
+        if self._hashtags:
+            caption = f"{caption}\n\n{' '.join(self._hashtags)}"
+        media = self._upload_post(path, caption, ext)
+        logger.info("Published post from calendar: %s (pk=%s)", path.name, media.pk)
+        return media
+
+    def publish_file_as_reel(self, path: Path, caption: str) -> Media:
+        """Publish a specific file as a reel (used by the content calendar)."""
+        if self._hashtags:
+            caption = f"{caption}\n\n{' '.join(self._hashtags)}"
+        media = self._upload_reel(path, caption)
+        logger.info("Published reel from calendar: %s (pk=%s)", path.name, media.pk)
+        return media
+
+    def publish_file_as_story(self, path: Path) -> Media:
+        """Publish a specific file as a story (used by the content calendar)."""
+        ext = path.suffix.lower()
+        media = self._upload_story(path, ext)
+        logger.info("Published story from calendar: %s (pk=%s)", path.name, media.pk)
+        return media
+
+    # ------------------------------------------------------------------
+    # Low-level upload helpers
+    # ------------------------------------------------------------------
+
     def _upload_post(
         self, path: Path, caption: str, ext: str
     ) -> Media:

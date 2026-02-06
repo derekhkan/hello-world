@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
 import yaml
+
+from instagram_agent.content_generator import GenerationConfig
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,7 @@ class AppConfig:
     username: str = ""
     password: str = ""
     content: ContentConfig = field(default_factory=ContentConfig)
+    generation: GenerationConfig = field(default_factory=GenerationConfig)
     engagement: EngagementConfig = field(default_factory=EngagementConfig)
     log_level: str = "INFO"
     log_file: str = "agent.log"
@@ -67,6 +71,8 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
     content_raw = raw.get("content", {})
     sched = content_raw.get("schedule", {})
     defaults = content_raw.get("defaults", {})
+    gen_raw = raw.get("generation", {})
+    ai_raw = gen_raw.get("ai", {})
     eng = raw.get("engagement", {})
     log_raw = raw.get("logging", {})
 
@@ -88,6 +94,15 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         default_location=defaults.get("location"),
     )
 
+    generation = GenerationConfig(
+        enabled=gen_raw.get("enabled", False),
+        quotes=gen_raw.get("quotes", []),
+        ai_enabled=ai_raw.get("enabled", False),
+        openai_api_key=ai_raw.get("openai_api_key", "") or os.environ.get("OPENAI_API_KEY", ""),
+        ai_prompts=ai_raw.get("prompts", []),
+        media_dir=content_raw.get("media_dir", "./media"),
+    )
+
     engagement = EngagementConfig(
         enabled=eng.get("enabled", True),
         target_accounts=eng.get("target_accounts", []),
@@ -105,6 +120,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         username=account.get("username", ""),
         password=account.get("password", ""),
         content=content,
+        generation=generation,
         engagement=engagement,
         log_level=log_raw.get("level", "INFO"),
         log_file=log_raw.get("file", "agent.log"),

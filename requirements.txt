@@ -2,3 +2,10 @@ instagrapi>=2.1.0
 Pillow>=10.0.0
 PyYAML>=6.0
 schedule>=1.2.0
+
+# Optional — only needed for AI image generation (DALL-E)
+# openai>=1.0.0
+
+# Optional — only needed for video reel generation
+# moviepy>=1.0.3
+# numpy>=1.24.0

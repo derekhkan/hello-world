@@ -6,12 +6,13 @@ account:
   username: "your_username"
   password: "your_password"
 
-# Content publishing settings
+# ---------------------------------------------------------------------------
+# Content publishing
+# ---------------------------------------------------------------------------
 content:
-  # Directory containing media files to post
   media_dir: "./media"
 
-  # Posting schedule (24-hour format, timezone of the machine)
+  # Posting schedule (24-hour format, machine timezone)
   schedule:
     posts:
       enabled: true
@@ -28,40 +29,58 @@ content:
     hashtags:
       - "#instagram"
       - "#content"
-    location: null  # Optional: location ID for tagging
+    location: null
 
-# Engagement settings — interact with other accounts
+# ---------------------------------------------------------------------------
+# Content generation — auto-create media from a weekly theme
+# ---------------------------------------------------------------------------
+generation:
+  enabled: true
+
+  # Quotes / text overlays used for template-based images
+  quotes:
+    - "Create the things you wish existed."
+    - "Stay hungry. Stay foolish."
+    - "Dream big. Start small. Act now."
+
+  # AI image generation (optional — requires `pip install openai`)
+  ai:
+    enabled: false
+    openai_api_key: ""       # or set OPENAI_API_KEY env var
+    prompts:
+      - "A serene minimalist workspace with natural light, editorial style"
+      - "Abstract gradient art in warm sunset tones, modern and clean"
+
+# ---------------------------------------------------------------------------
+# Engagement — interact with other accounts
+# ---------------------------------------------------------------------------
 engagement:
   enabled: true
 
-  # Accounts to engage with (like + comment on their posts)
   target_accounts:
     - "account_one"
     - "account_two"
 
-  # Discover new relevant accounts via hashtags
   discovery_hashtags:
     - "photography"
     - "travel"
 
-  # How many posts to like per target account per run
   likes_per_account: 3
 
-  # Whether to leave comments
   commenting:
     enabled: true
-    # Pool of comments chosen at random
     templates:
       - "Great post! Love this content."
       - "This is amazing! Keep it up."
       - "Really inspiring work!"
 
-  # Rate-limit delays (seconds) to avoid Instagram throttling
   delay:
     min_seconds: 30
     max_seconds: 90
 
+# ---------------------------------------------------------------------------
 # Logging
+# ---------------------------------------------------------------------------
 logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
   file: "agent.log"

@@ -2,6 +2,7 @@
 config.yaml
 *.session
 *.json.enc
+calendar.json
 
 # Python
 __pycache__/
