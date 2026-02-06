@@ -1,17 +1,16 @@
 """Content calendar — translate a weekly theme into a concrete 7-day
-publishing plan with varied captions, generate the media, and persist the
-calendar as JSON so the scheduler knows exactly what to post and when.
+publishing plan with varied, grammatically natural captions.
 
-Typical workflow
-----------------
-1. User sets a theme:  ``python main.py theme "Staying Disciplined"``
-2. The ``ThemePlanner`` creates a 7-day ``ContentCalendar`` with unique
-   caption copy for each slot — each one explores a different angle of the
-   theme rather than repeating it verbatim.
-3. The ``AgentScheduler`` reads the calendar and publishes each item at its
-   scheduled time.
+The caption system uses multiple grammatical forms of the theme so copy
+reads naturally in every context:
 
-Calendar file: ``calendar.json`` in the project root (git-ignored).
+    Theme input:  "Staying Disciplined"
+    noun form:    "discipline"        — "You need discipline."
+    verb form:    "stay disciplined"  — "You need to stay disciplined."
+    adj form:     "disciplined"       — "The most disciplined people win."
+    gerund form:  "staying disciplined" — "Staying disciplined is a choice."
+
+Users provide these forms via the CLI or they default to the raw theme.
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ import logging
 import random
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import List, Optional
 
@@ -43,12 +42,10 @@ CONTENT_TYPES = ("post", "reel", "story")
 
 @dataclass
 class CalendarEntry:
-    """A single scheduled content item."""
-
     id: str
-    day: str  # ISO date, e.g. "2025-06-15"
-    time: str  # HH:MM
-    content_type: str  # "post" | "reel" | "story"
+    day: str
+    time: str
+    content_type: str
     theme: str
     caption: str
     media_path: str = ""
@@ -57,13 +54,9 @@ class CalendarEntry:
 
 @dataclass
 class ContentCalendar:
-    """A full 7-day (or N-day) content plan."""
-
     theme: str
     start_date: str
     entries: List[CalendarEntry] = field(default_factory=list)
-
-    # -- Persistence -------------------------------------------------------
 
     def save(self, path: Path = CALENDAR_FILE) -> None:
         with open(path, "w") as fh:
@@ -81,13 +74,9 @@ class ContentCalendar:
             entries=entries,
         )
 
-    # -- Queries -----------------------------------------------------------
-
     def pending_for_today(self) -> List[CalendarEntry]:
         today = date.today().isoformat()
-        return [
-            e for e in self.entries if e.day == today and not e.published
-        ]
+        return [e for e in self.entries if e.day == today and not e.published]
 
     def mark_published(self, entry_id: str) -> None:
         for e in self.entries:
@@ -97,83 +86,134 @@ class ContentCalendar:
 
 
 # ---------------------------------------------------------------------------
-# Caption variation system
+# Theme forms — different grammatical versions of the theme
 # ---------------------------------------------------------------------------
-# Instead of repeating the theme word-for-word, each slot gets a unique
-# angle.  The blueprint contains a *prompt style* that gets combined with
-# randomly-selected angle templates.  This produces copy like:
+# Templates use these placeholders:
+#   {noun}    — the core concept as a noun         ("discipline")
+#   {verb}    — action/imperative form              ("stay disciplined")
+#   {gerund}  — -ing form                           ("staying disciplined")
+#   {adj}     — adjective form                      ("disciplined")
+#   {day_num} — day of the week (1-7)
 #
-#   Theme: "Staying Disciplined"
-#   -> "Discipline is showing up day in and day out."
-#   -> "Why is staying disciplined important? Because small wins stack up."
-#   -> "You don't need motivation. You need discipline."
+# Common themes and their forms:
 #
-# The system works by defining angle *patterns* that riff on the theme from
-# different perspectives.
+#   "Staying Disciplined"  → noun=discipline,  verb=stay disciplined,
+#                             gerund=staying disciplined, adj=disciplined
+#   "Stay Consistent"      → noun=consistency, verb=stay consistent,
+#                             gerund=staying consistent,  adj=consistent
+#   "Push Through"         → noun=perseverance, verb=push through,
+#                             gerund=pushing through,     adj=relentless
+#   "No Excuses"           → noun=accountability, verb=stop making excuses,
+#                             gerund=cutting out excuses, adj=accountable
 
-# -- Angle templates -------------------------------------------------------
-# {theme} is the user's raw theme string.  Each template explores a
-# different sub-topic or emotional angle.
+@dataclass
+class ThemeForms:
+    """All grammatical forms of a theme for natural caption generation."""
+    raw: str       # original theme string
+    noun: str      # "discipline", "consistency"
+    verb: str      # "stay disciplined", "be consistent"
+    gerund: str    # "staying disciplined", "being consistent"
+    adj: str       # "disciplined", "consistent"
+
+
+# Well-known theme mappings for automatic form detection
+KNOWN_THEMES: dict[str, dict[str, str]] = {
+    "staying disciplined": {"noun": "discipline", "verb": "stay disciplined", "gerund": "staying disciplined", "adj": "disciplined"},
+    "stay disciplined": {"noun": "discipline", "verb": "stay disciplined", "gerund": "staying disciplined", "adj": "disciplined"},
+    "discipline": {"noun": "discipline", "verb": "stay disciplined", "gerund": "staying disciplined", "adj": "disciplined"},
+    "staying consistent": {"noun": "consistency", "verb": "stay consistent", "gerund": "staying consistent", "adj": "consistent"},
+    "stay consistent": {"noun": "consistency", "verb": "stay consistent", "gerund": "staying consistent", "adj": "consistent"},
+    "consistency": {"noun": "consistency", "verb": "stay consistent", "gerund": "staying consistent", "adj": "consistent"},
+    "push through": {"noun": "perseverance", "verb": "push through", "gerund": "pushing through", "adj": "relentless"},
+    "pushing through": {"noun": "perseverance", "verb": "push through", "gerund": "pushing through", "adj": "relentless"},
+    "no excuses": {"noun": "accountability", "verb": "stop making excuses", "gerund": "cutting out excuses", "adj": "accountable"},
+    "showing up": {"noun": "commitment", "verb": "show up", "gerund": "showing up", "adj": "committed"},
+    "show up": {"noun": "commitment", "verb": "show up", "gerund": "showing up", "adj": "committed"},
+    "grinding": {"noun": "the grind", "verb": "keep grinding", "gerund": "grinding", "adj": "relentless"},
+    "grind": {"noun": "the grind", "verb": "keep grinding", "gerund": "grinding", "adj": "relentless"},
+    "hard work": {"noun": "hard work", "verb": "work hard", "gerund": "working hard", "adj": "hardworking"},
+    "working hard": {"noun": "hard work", "verb": "work hard", "gerund": "working hard", "adj": "hardworking"},
+    "mental toughness": {"noun": "mental toughness", "verb": "stay mentally tough", "gerund": "building mental toughness", "adj": "mentally tough"},
+    "patience": {"noun": "patience", "verb": "be patient", "gerund": "being patient", "adj": "patient"},
+    "being patient": {"noun": "patience", "verb": "be patient", "gerund": "being patient", "adj": "patient"},
+    "focus": {"noun": "focus", "verb": "stay focused", "gerund": "staying focused", "adj": "focused"},
+    "staying focused": {"noun": "focus", "verb": "stay focused", "gerund": "staying focused", "adj": "focused"},
+    "balance": {"noun": "balance", "verb": "find balance", "gerund": "finding balance", "adj": "balanced"},
+    "recovery": {"noun": "recovery", "verb": "recover properly", "gerund": "recovering", "adj": "recovered"},
+    "strength": {"noun": "strength", "verb": "build strength", "gerund": "building strength", "adj": "strong"},
+    "building strength": {"noun": "strength", "verb": "build strength", "gerund": "building strength", "adj": "strong"},
+}
+
+
+def _detect_forms(theme: str) -> ThemeForms:
+    """Try to detect grammatical forms from known themes, otherwise
+    use the raw theme everywhere (lowercase)."""
+    key = theme.lower().strip()
+    if key in KNOWN_THEMES:
+        m = KNOWN_THEMES[key]
+        return ThemeForms(raw=theme, **m)
+
+    # Fallback: use the raw theme lowercased for all forms
+    lower = theme.lower()
+    return ThemeForms(raw=theme, noun=lower, verb=lower, gerund=lower, adj=lower)
+
+
+# ---------------------------------------------------------------------------
+# Caption templates — use {noun}, {verb}, {gerund}, {adj} for natural copy
+# ---------------------------------------------------------------------------
 
 POST_ANGLES = [
     # Why it matters
-    "Why does {theme} matter? Because the days you don't feel like it are the days that count the most.",
-    "{theme} isn't about perfection. It's about showing up — day in, day out.",
-    "The secret nobody talks about: {theme} is a choice you make before you feel ready.",
-    "You don't need motivation. You need {theme}. Motivation fades. Habits don't.",
-    "{theme} is the bridge between where you are and where you want to be.",
-    "Everybody wants the results. Nobody wants to talk about {theme}. That's why most people quit.",
+    "Why does {noun} matter? Because the days you don't feel like it are the days that count the most.",
+    "{noun} isn't about perfection. It's about showing up — day in, day out.",
+    "The secret nobody talks about: {noun} is a choice you make before you feel ready.",
+    "You don't need motivation. You need {noun}. Motivation fades. Habits don't.",
+    "{noun} is the bridge between where you are and where you want to be.",
+    "Everybody wants the results. Nobody wants to talk about {noun}. That's why most people quit.",
     # How it shows up
-    "{theme} looks like getting up when the alarm goes off. No snooze. No debate.",
-    "What does {theme} look like? It looks boring. It looks repetitive. And that's exactly why it works.",
-    "{theme} is the workout you do when nobody's watching.",
-    "Small wins, stacked daily. That's what {theme} really means.",
-    "{theme} isn't loud. It's the quiet decision to keep going.",
-    "People ask how I stay consistent. The answer is simple: {theme}.",
+    "What does it look like to {verb}? It looks boring. It looks repetitive. And that's exactly why it works.",
+    "Being {adj} means getting up when the alarm goes off. No snooze. No debate.",
+    "{gerund} is the workout you do when nobody's watching.",
+    "Small wins, stacked daily. That's what it really means to {verb}.",
+    "{gerund} isn't loud. It's the quiet decision to keep going.",
+    "People ask how I stay consistent. The answer is simple: {noun}.",
     # Personal / dad angle
-    "My kids will never remember my excuses. But they'll remember my {theme}.",
-    "{theme} today means a stronger example tomorrow. Your kids are watching.",
-    "Being a dad taught me more about {theme} than any book ever could.",
-    "{theme} — because the people counting on me don't take days off.",
+    "My kids will never remember my excuses. But they'll remember that I was {adj}.",
+    "Being {adj} today means a stronger example tomorrow. Your kids are watching.",
+    "Being a dad taught me more about {noun} than any book ever could.",
+    "I {verb} because the people counting on me don't take days off.",
 ]
 
 STORY_ANGLES = [
-    "Quick reminder: {theme} beats talent every single time.",
-    "Day {day_num} of the week. Still locked in. {theme}.",
-    "No shortcuts. Just {theme}.",
-    "Ask yourself: did you show {theme} today?",
-    "The compound effect of {theme} is real. Trust the process.",
-    "Behind the scenes: what {theme} actually looks like at 5 AM.",
-    "{theme}. That's it. That's the story.",
-    "Hot take: {theme} is more important than motivation. Fight me.",
-    "How do you practice {theme}? Drop your answer.",
-    "Real talk — {theme} isn't always glamorous. But it's always worth it.",
-    "Nobody posts about the boring parts of {theme}. Here it is.",
-    "Today's non-negotiable: {theme}.",
+    "Quick reminder: {noun} beats talent every single time.",
+    "Day {day_num} of the week. Still locked in. Still {adj}.",
+    "No shortcuts. Just {noun}.",
+    "Ask yourself: did you {verb} today?",
+    "The compound effect of {gerund} is real. Trust the process.",
+    "Behind the scenes: what it looks like to {verb} at 5 AM.",
+    "{noun}. That's it. That's the story.",
+    "Hot take: {noun} is more important than motivation. Fight me.",
+    "How do you practice {gerund}? Drop your answer.",
+    "Real talk — {gerund} isn't always glamorous. But it's always worth it.",
+    "Nobody posts about the boring parts of {gerund}. Here it is.",
+    "Today's non-negotiable: {verb}.",
 ]
 
 REEL_ANGLES = [
-    "{theme} — what it looks like vs. what it feels like.",
-    "7 days of {theme}. Here's what happened.",
-    "The truth about {theme} that nobody tells you.",
-    "{theme} in action. No edits. No filters.",
-    "Watch this before you skip your workout. {theme}.",
-    "How {theme} changed everything for me this week.",
+    "{gerund} — what it looks like vs. what it feels like.",
+    "7 days of {gerund}. Here's what happened.",
+    "The truth about {noun} that nobody tells you.",
+    "{noun} in action. No edits. No filters.",
+    "Watch this before you skip your workout. {verb}.",
+    "How {gerund} changed everything for me this week.",
 ]
 
 
-def _pick_angle(angles: list[str], theme: str, day_num: int) -> str:
-    """Pick a random angle template and fill it in."""
-    template = random.choice(angles)
-    return template.format(theme=theme, day_num=day_num)
-
-
 # ---------------------------------------------------------------------------
-# Weekly blueprint (schedule only — captions come from angles)
+# Weekly blueprint
 # ---------------------------------------------------------------------------
 
 WEEKLY_BLUEPRINT = [
-    # (day_offset, time, content_type)
     (0, "09:00", "post"),
     (0, "12:00", "story"),
     (1, "09:00", "post"),
@@ -197,7 +237,7 @@ WEEKLY_BLUEPRINT = [
 
 class ThemePlanner:
     """Takes a theme string and produces a ready-to-publish
-    ``ContentCalendar`` with unique, varied captions and pre-generated media."""
+    ``ContentCalendar`` with grammatically correct, varied captions."""
 
     def __init__(self, gen_config: GenerationConfig) -> None:
         self._generator = ContentGenerator(gen_config)
@@ -208,12 +248,11 @@ class ThemePlanner:
         theme: str,
         start: Optional[date] = None,
         blueprint: Optional[list] = None,
+        forms: Optional[ThemeForms] = None,
     ) -> ContentCalendar:
-        """Build a full calendar from *theme* and generate media for every
-        entry.  Each entry gets a unique caption angle — no two posts say the
-        same thing."""
         start = start or date.today()
         blueprint = blueprint or WEEKLY_BLUEPRINT
+        forms = forms or _detect_forms(theme)
 
         calendar = ContentCalendar(
             theme=theme,
@@ -226,13 +265,10 @@ class ThemePlanner:
             entry_date = start + timedelta(days=day_offset)
             day_num = day_offset + 1
 
-            # Pick a unique caption
-            caption = self._unique_caption(ctype, theme, day_num, used_captions)
+            caption = self._unique_caption(ctype, forms, day_num, used_captions)
             used_captions.add(caption)
 
             entry_id = uuid.uuid4().hex[:12]
-
-            # Generate media
             media_path = self._generate_media(ctype, caption)
 
             entry = CalendarEntry(
@@ -247,10 +283,7 @@ class ThemePlanner:
             calendar.entries.append(entry)
             logger.info(
                 "Planned %s for %s @ %s — %s",
-                ctype,
-                entry_date.isoformat(),
-                time_str,
-                caption[:60],
+                ctype, entry_date.isoformat(), time_str, caption[:60],
             )
 
         calendar.save()
@@ -259,11 +292,10 @@ class ThemePlanner:
     @staticmethod
     def _unique_caption(
         ctype: str,
-        theme: str,
+        forms: ThemeForms,
         day_num: int,
         used: set[str],
     ) -> str:
-        """Pick a caption that hasn't been used yet."""
         if ctype == "post":
             pool = POST_ANGLES
         elif ctype == "story":
@@ -273,16 +305,22 @@ class ThemePlanner:
         else:
             pool = POST_ANGLES
 
-        # Shuffle and pick the first unused one
+        fill = {
+            "noun": forms.noun,
+            "verb": forms.verb,
+            "gerund": forms.gerund,
+            "adj": forms.adj,
+            "day_num": day_num,
+        }
+
         candidates = list(pool)
         random.shuffle(candidates)
         for template in candidates:
-            caption = template.format(theme=theme, day_num=day_num)
+            caption = template.format(**fill)
             if caption not in used:
                 return caption
 
-        # Fallback: all used (shouldn't happen with enough templates)
-        return candidates[0].format(theme=theme, day_num=day_num)
+        return candidates[0].format(**fill)
 
     def _generate_media(self, ctype: str, caption: str) -> Path:
         if ctype == "post":
@@ -294,10 +332,6 @@ class ThemePlanner:
             return self._generator.generate_reel(texts=slides)
         else:
             raise ValueError(f"Unknown content type: {ctype}")
-
-    # ------------------------------------------------------------------
-    # Show a human-readable summary
-    # ------------------------------------------------------------------
 
     @staticmethod
     def summarize(calendar: ContentCalendar) -> str:
