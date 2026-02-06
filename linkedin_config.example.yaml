@@ -1,0 +1,87 @@
+# LinkedIn Automation Agent Configuration
+# Copy this file to linkedin_config.yaml and fill in your values.
+# NEVER commit linkedin_config.yaml — it contains secrets.
+
+account:
+  # OAuth2 access token (obtained via LinkedIn's 3-legged OAuth flow)
+  access_token: ""  # or set LINKEDIN_ACCESS_TOKEN env var
+  # Optional: your person URN (auto-detected if not provided)
+  person_urn: ""    # e.g. "urn:li:person:abc123"
+
+# ---------------------------------------------------------------------------
+# Content publishing
+# ---------------------------------------------------------------------------
+content:
+  media_dir: "./media"
+
+  # Posting schedule (24-hour format, machine timezone)
+  schedule:
+    posts:
+      enabled: true
+      times: ["08:00", "12:00"]
+    articles:
+      enabled: true
+      times: ["10:00"]
+    carousels:
+      enabled: true
+      times: ["14:00"]
+
+  # Default hashtags appended to posts
+  default_hashtags:
+    - "#leadership"
+    - "#professionaldevelopment"
+    - "#growthmindset"
+
+# ---------------------------------------------------------------------------
+# Content generation — auto-create post images and article covers
+# ---------------------------------------------------------------------------
+generation:
+  enabled: true
+
+  quotes:
+    - "Your network is your net worth."
+    - "The best investment is in yourself."
+    - "Leadership isn't about titles. It's about impact."
+
+  ai:
+    enabled: false
+    gemini_api_key: ""       # or set GEMINI_API_KEY env var
+    openai_api_key: ""       # or set OPENAI_API_KEY env var
+    prompts:
+      - "Professional LinkedIn post image with clean typography"
+
+# ---------------------------------------------------------------------------
+# Engagement — interact with connections
+# ---------------------------------------------------------------------------
+engagement:
+  enabled: true
+
+  # Person URNs of target authors to engage with
+  target_authors:
+    - "urn:li:person:author_id_1"
+    - "urn:li:person:author_id_2"
+
+  # Keywords for content discovery (limited by LinkedIn API)
+  discovery_keywords:
+    - "leadership"
+    - "career growth"
+
+  likes_per_author: 3
+
+  commenting:
+    enabled: true
+    templates:
+      - "Great insight! Thanks for sharing this perspective."
+      - "Really valuable content. This resonates deeply."
+      - "Excellent post. The point about consistency is key."
+
+  delay:
+    min_seconds: 60
+    max_seconds: 180
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  file: "linkedin_agent.log"

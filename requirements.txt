@@ -1,0 +1,26 @@
+# Core (shared across all agents)
+Pillow>=10.0.0
+PyYAML>=6.0
+schedule>=1.2.0
+requests>=2.31.0
+
+# Instagram agent
+instagrapi>=2.1.0
+
+# YouTube agent
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# X (Twitter) agent
+tweepy>=4.14.0
+
+# AI image generation (shared — optional)
+google-genai>=1.0.0
+
+# Optional — only needed for AI image generation (DALL-E)
+# openai>=1.0.0
+
+# Optional — only needed for video reel generation
+# moviepy>=1.0.3
+# numpy>=1.24.0

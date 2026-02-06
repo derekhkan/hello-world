@@ -1,0 +1,89 @@
+# Instagram Automation Agent Configuration
+# Copy this file to config.yaml and fill in your values.
+# NEVER commit config.yaml — it contains secrets.
+
+account:
+  username: "your_username"
+  password: "your_password"
+
+# ---------------------------------------------------------------------------
+# Content publishing
+# ---------------------------------------------------------------------------
+content:
+  media_dir: "./media"
+
+  # Posting schedule (24-hour format, machine timezone)
+  schedule:
+    posts:
+      enabled: true
+      times: ["09:00", "13:00", "18:00"]
+    reels:
+      enabled: true
+      times: ["12:00", "20:00"]
+    stories:
+      enabled: true
+      times: ["08:00", "15:00", "21:00"]
+
+  # Default caption settings
+  defaults:
+    hashtags:
+      - "#instagram"
+      - "#content"
+    location: null
+
+# ---------------------------------------------------------------------------
+# Content generation — auto-create media from a weekly theme
+# ---------------------------------------------------------------------------
+generation:
+  enabled: true
+
+  # Quotes / text overlays used for template-based images
+  quotes:
+    - "Create the things you wish existed."
+    - "Stay hungry. Stay foolish."
+    - "Dream big. Start small. Act now."
+
+  # AI image generation
+  ai:
+    enabled: false
+    # Gemini Nano Banana Pro — photorealistic B&W gym images (recommended)
+    gemini_api_key: ""       # or set GEMINI_API_KEY env var
+    # OpenAI DALL-E (optional — requires `pip install openai`)
+    openai_api_key: ""       # or set OPENAI_API_KEY env var
+    prompts:
+      - "A serene minimalist workspace with natural light, editorial style"
+      - "Abstract gradient art in warm sunset tones, modern and clean"
+
+# ---------------------------------------------------------------------------
+# Engagement — interact with other accounts
+# ---------------------------------------------------------------------------
+engagement:
+  enabled: true
+
+  target_accounts:
+    - "account_one"
+    - "account_two"
+
+  discovery_hashtags:
+    - "photography"
+    - "travel"
+
+  likes_per_account: 3
+
+  commenting:
+    enabled: true
+    templates:
+      - "Great post! Love this content."
+      - "This is amazing! Keep it up."
+      - "Really inspiring work!"
+
+  delay:
+    min_seconds: 30
+    max_seconds: 90
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  file: "agent.log"

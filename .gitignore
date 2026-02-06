@@ -1,0 +1,39 @@
+# Secrets
+config.yaml
+youtube_config.yaml
+x_config.yaml
+linkedin_config.yaml
+client_secrets.json
+*.session
+*.json.enc
+calendar.json
+yt_calendar.json
+x_calendar.json
+li_calendar.json
+flagged_accounts.json
+yt_flagged_channels.json
+x_flagged_accounts.json
+li_flagged_profiles.json
+ig_session.json
+yt_token.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# Media uploads (local only)
+media/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

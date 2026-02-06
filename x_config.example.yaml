@@ -1,0 +1,89 @@
+# X (Twitter) Automation Agent Configuration
+# Copy this file to x_config.yaml and fill in your values.
+# NEVER commit x_config.yaml — it contains secrets.
+
+account:
+  # Get these from https://developer.x.com/en/portal/dashboard
+  api_key: ""              # or set X_API_KEY env var
+  api_secret: ""           # or set X_API_SECRET env var
+  access_token: ""         # or set X_ACCESS_TOKEN env var
+  access_token_secret: ""  # or set X_ACCESS_TOKEN_SECRET env var
+  bearer_token: ""         # or set X_BEARER_TOKEN env var
+
+# ---------------------------------------------------------------------------
+# Content publishing
+# ---------------------------------------------------------------------------
+content:
+  media_dir: "./media"
+
+  # Posting schedule (24-hour format, machine timezone)
+  schedule:
+    tweets:
+      enabled: true
+      times: ["08:00", "12:00", "18:00"]
+    threads:
+      enabled: true
+      times: ["10:00"]
+    media_posts:
+      enabled: true
+      times: ["14:00"]
+
+  # Default hashtags appended to tweets
+  default_hashtags:
+    - "#motivation"
+    - "#mindset"
+
+# ---------------------------------------------------------------------------
+# Content generation — auto-create tweet images and visuals
+# ---------------------------------------------------------------------------
+generation:
+  enabled: true
+
+  quotes:
+    - "Most people won't tell you this."
+    - "Here's what I learned the hard way."
+    - "Stop scrolling. Read this."
+
+  ai:
+    enabled: false
+    gemini_api_key: ""       # or set GEMINI_API_KEY env var
+    openai_api_key: ""       # or set OPENAI_API_KEY env var
+    prompts:
+      - "Bold motivational quote graphic with dark background"
+
+# ---------------------------------------------------------------------------
+# Engagement — interact with other accounts
+# ---------------------------------------------------------------------------
+engagement:
+  enabled: true
+
+  target_accounts:
+    - "account_one"
+    - "account_two"
+
+  discovery_keywords:
+    - "self improvement"
+    - "productivity"
+
+  likes_per_account: 3
+
+  replying:
+    enabled: true
+    templates:
+      - "Great thread! Totally agree with this."
+      - "This is spot on. Saving for later."
+      - "More people need to hear this. Well said."
+
+  retweet:
+    enabled: true
+
+  delay:
+    min_seconds: 30
+    max_seconds: 90
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  file: "x_agent.log"
