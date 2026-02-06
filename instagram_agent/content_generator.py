@@ -1,15 +1,18 @@
 """Content generation — create images, stories, and video reels.
 
-Three modes of operation:
+Four modes of operation (tried in order):
 
-1. **Brand kit mode** (preferred) — uses your own downloaded Instagram
-   photos as backgrounds with a dark overlay and text on top.
+1. **Gemini mode** (preferred) — generates photorealistic black-and-white
+   gym images via the Nano Banana Pro (Gemini) API, then overlays text.
 
-2. **Template mode** (fallback) — renders text on a solid-colour
+2. **Brand kit mode** — uses your own downloaded Instagram photos as
+   backgrounds with a dark overlay and text on top.
+
+3. **Template mode** (fallback) — renders text on a solid-colour
    background using Pillow.
 
-3. **AI mode** (optional, requires OpenAI key) — generates images via
-   DALL-E.
+4. **DALL-E mode** (optional, requires OpenAI key) — generates images
+   via DALL-E.
 
 Generated files land in ``media/{posts,stories,reels}/``.
 """
@@ -17,6 +20,7 @@ Generated files land in ``media/{posts,stories,reels}/``.
 from __future__ import annotations
 
 import logging
+import mimetypes
 import os
 import random
 import textwrap
@@ -57,6 +61,30 @@ DEFAULT_QUOTES: list[str] = [
     "Be the energy you want to attract.",
 ]
 
+# Photorealistic gym scene prompts for Gemini image generation
+GYM_SCENE_PROMPTS: list[str] = [
+    "Black and white photograph of a power rack with loaded barbell in a garage gym, dramatic side lighting, gritty raw aesthetic, high contrast monochrome",
+    "Monochrome close-up of heavy dumbbells on a rack, shallow depth of field, dark moody gym atmosphere, black and white photography",
+    "Black and white photograph of a kettlebell on a rubber gym floor with chalk dust, dramatic overhead lighting, raw gritty aesthetic",
+    "High contrast black and white photo of weight plates stacked on a barbell, garage gym setting, moody shadows, cinematic composition",
+    "Monochrome photograph of a squat rack with iron plates in a home gym, dramatic window light casting shadows, gritty raw style",
+    "Black and white close-up of a barbell knurling with chalk, dark gym background, shallow depth of field, high contrast photography",
+    "Dramatic monochrome photo of a row of kettlebells on a gym floor, strong directional lighting, raw industrial aesthetic",
+    "Black and white photograph of battle ropes coiled on a gym floor, moody low-key lighting, gritty texture, cinematic composition",
+    "High contrast monochrome photo of a pull-up bar in a garage gym with concrete walls, dramatic shadows, raw aesthetic",
+    "Black and white photograph of a loaded deadlift bar from floor level, chalk dust in the air, dramatic gym lighting",
+    "Monochrome close-up of gym chalk on rough hands gripping a barbell, dark background, high contrast black and white",
+    "Black and white photo of an empty power cage in a home gym, morning light through garage door, moody atmosphere",
+    "Dramatic black and white photo of a medicine ball and jump rope on gym floor, harsh overhead light, raw texture",
+    "Monochrome photograph of iron weight plates leaning against a gym wall, dramatic side lighting, gritty industrial feel",
+    "Black and white close-up of a adjustable dumbbell set, dark moody background, high contrast photography, shallow focus",
+    "High contrast monochrome photo of a bench press station with heavy plates, garage gym, dramatic shadows on concrete floor",
+    "Black and white photograph of resistance bands hanging from a pull-up bar, minimalist gym setup, moody lighting",
+    "Dramatic monochrome photo of a tire and sledgehammer in a crossfit gym, gritty texture, high contrast black and white",
+    "Black and white photograph looking up at a loaded squat bar from below, dramatic perspective, dark gym atmosphere",
+    "Monochrome close-up of a gym timer clock on a concrete wall, dark industrial gym setting, high contrast photography",
+]
+
 POST_SIZE = (1080, 1080)
 STORY_SIZE = (1080, 1920)
 REEL_SIZE = (1080, 1920)
@@ -75,6 +103,7 @@ class GenerationConfig:
     palettes: list[dict] = field(default_factory=lambda: list(DEFAULT_PALETTES))
     ai_enabled: bool = False
     openai_api_key: str = ""
+    gemini_api_key: str = ""
     ai_prompts: List[str] = field(default_factory=list)
     media_dir: str = "./media"
 
@@ -129,6 +158,110 @@ def _draw_centered_text(
         )
 
     draw.multiline_text((x, y), wrapped, fill=fg_color, font=font, align="center")
+
+
+# ---------------------------------------------------------------------------
+# Gemini (Nano Banana Pro) — photorealistic B&W gym images
+# ---------------------------------------------------------------------------
+
+def generate_gemini_background(
+    api_key: str,
+    size: tuple[int, int] = POST_SIZE,
+    scene_prompt: Optional[str] = None,
+) -> Optional[Image.Image]:
+    """Generate a photorealistic B&W gym image via Gemini Nano Banana Pro.
+
+    Returns ``None`` if generation fails or the package is not installed.
+    """
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        logger.warning("google-genai not installed — skipping Gemini generation")
+        return None
+
+    scene_prompt = scene_prompt or random.choice(GYM_SCENE_PROMPTS)
+
+    # Pick aspect ratio based on target size
+    w, h = size
+    if abs(w - h) < 100:
+        aspect = "1:1"
+    elif h > w:
+        aspect = "9:16"
+    else:
+        aspect = "16:9"
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(text=scene_prompt),
+                ],
+            ),
+        ]
+
+        generate_content_config = types.GenerateContentConfig(
+            image_config=types.ImageConfig(
+                aspect_ratio=aspect,
+                image_size="1K",
+            ),
+            response_modalities=["IMAGE", "TEXT"],
+        )
+
+        # Stream response and collect image data
+        for chunk in client.models.generate_content_stream(
+            model="gemini-2.5-flash-preview-04-17",
+            contents=contents,
+            config=generate_content_config,
+        ):
+            if chunk.parts is None:
+                continue
+            for part in chunk.parts:
+                if part.inline_data and part.inline_data.data:
+                    # Save to temp file, then open with Pillow
+                    ext = mimetypes.guess_extension(part.inline_data.mime_type) or ".png"
+                    tmp_path = Path(f"/tmp/gemini_{uuid.uuid4().hex[:8]}{ext}")
+                    tmp_path.write_bytes(part.inline_data.data)
+
+                    img = Image.open(tmp_path).convert("RGB")
+                    tmp_path.unlink(missing_ok=True)
+
+                    # Resize to target size
+                    img = _center_crop_resize(img, size)
+                    logger.info("Gemini generated B&W gym background (%s)", aspect)
+                    return img
+
+    except Exception as e:
+        logger.warning("Gemini image generation failed: %s", e)
+        return None
+
+    return None
+
+
+def generate_gemini_image(
+    text: str,
+    api_key: str,
+    size: tuple[int, int] = POST_SIZE,
+    overlay_opacity: float = 0.45,
+) -> Optional[Image.Image]:
+    """Generate a photorealistic B&W gym photo and overlay text on it."""
+    bg = generate_gemini_background(api_key, size)
+    if bg is None:
+        return None
+
+    # Apply a subtle dark overlay so text is readable
+    dark = Image.new("RGB", size, (0, 0, 0))
+    img = Image.blend(bg, dark, overlay_opacity)
+
+    # Draw text in white with shadow
+    draw = ImageDraw.Draw(img)
+    font_size = 64 if size[0] >= 1080 else 44
+    _draw_centered_text(draw, text, size, (255, 255, 255), font_size, shadow=True)
+
+    return img
 
 
 # ---------------------------------------------------------------------------
@@ -219,19 +352,35 @@ def generate_template_image(
 
 
 # ---------------------------------------------------------------------------
-# Smart image generator — brand kit first, template fallback
+# Smart image generator — Gemini → brand kit → template fallback
 # ---------------------------------------------------------------------------
+
+# Module-level holder for Gemini API key (set by ContentGenerator)
+_gemini_api_key: str = ""
+
 
 def generate_image(
     text: str,
     size: tuple[int, int] = POST_SIZE,
     palette: Optional[dict] = None,
 ) -> Image.Image:
-    """Generate an image using the brand kit if available, otherwise fall
-    back to template mode."""
+    """Generate an image trying these modes in order:
+    1. Gemini (photorealistic B&W gym photo) if API key set
+    2. Brand kit (your own photos)
+    3. Template (solid colour fallback)
+    """
+    # Try Gemini first
+    if _gemini_api_key:
+        gemini_img = generate_gemini_image(text, _gemini_api_key, size)
+        if gemini_img is not None:
+            return gemini_img
+
+    # Try brand kit
     branded = generate_branded_image(text, size)
     if branded is not None:
         return branded
+
+    # Fallback to template
     return generate_template_image(text, size, palette)
 
 
@@ -320,6 +469,11 @@ class ContentGenerator:
     def __init__(self, config: GenerationConfig) -> None:
         self._cfg = config
         self._media_dir = Path(config.media_dir)
+        # Set module-level Gemini key so generate_image() can use it
+        global _gemini_api_key
+        _gemini_api_key = config.gemini_api_key or ""
+        if _gemini_api_key:
+            logger.info("Gemini (Nano Banana) image generation enabled")
 
     def _ensure_dirs(self) -> None:
         for sub in ("posts", "reels", "stories"):

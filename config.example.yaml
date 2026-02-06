@@ -43,9 +43,12 @@ generation:
     - "Stay hungry. Stay foolish."
     - "Dream big. Start small. Act now."
 
-  # AI image generation (optional — requires `pip install openai`)
+  # AI image generation
   ai:
     enabled: false
+    # Gemini Nano Banana Pro — photorealistic B&W gym images (recommended)
+    gemini_api_key: ""       # or set GEMINI_API_KEY env var
+    # OpenAI DALL-E (optional — requires `pip install openai`)
     openai_api_key: ""       # or set OPENAI_API_KEY env var
     prompts:
       - "A serene minimalist workspace with natural light, editorial style"
