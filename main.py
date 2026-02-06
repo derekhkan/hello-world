@@ -98,6 +98,20 @@ def cmd_generate(args: argparse.Namespace) -> None:
     print(f"\nGenerated {total} media files in {config.generation.media_dir}/")
 
 
+def cmd_flagged(args: argparse.Namespace) -> None:
+    """Show or clear flagged accounts."""
+    from instagram_agent.engagement import EngagementManager
+    if args.clear:
+        count = EngagementManager.clear_flagged()
+        print(f"Cleared {count} flagged account(s).")
+    else:
+        print(EngagementManager(
+            api=None,
+            target_accounts=[],
+            discovery_hashtags=[],
+        ).show_flagged())
+
+
 def cmd_run(args: argparse.Namespace) -> None:
     """Start the agent scheduler (daemon or one-shot)."""
     config = load_config(args.config)
@@ -144,6 +158,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_gen.add_argument("--reels", type=int, default=0)
     p_gen.add_argument("--config", default="config.yaml")
 
+    # -- flagged -----------------------------------------------------------
+    p_flag = sub.add_parser("flagged", help="Show or clear flagged accounts")
+    p_flag.add_argument("--clear", action="store_true", help="Clear all flagged accounts")
+
     # -- run ---------------------------------------------------------------
     p_run = sub.add_parser("run", help="Start the agent scheduler")
     p_run.add_argument("--config", default="config.yaml")
@@ -160,6 +178,7 @@ def main(argv: list[str] | None = None) -> None:
         "theme": cmd_theme,
         "calendar": cmd_calendar,
         "generate": cmd_generate,
+        "flagged": cmd_flagged,
         "run": cmd_run,
     }
 

@@ -3,6 +3,7 @@ config.yaml
 *.session
 *.json.enc
 calendar.json
+flagged_accounts.json
 
 # Python
 __pycache__/

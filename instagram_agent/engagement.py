@@ -1,17 +1,57 @@
 """Engagement module — like and comment on posts from target accounts and
-discover new relevant accounts via hashtag exploration."""
+discover new relevant accounts via hashtag exploration.
+
+Accounts that can't be found (renamed, deactivated, etc.) are flagged in
+``flagged_accounts.json`` so they can be cleaned up at the end of the week.
+"""
 
 from __future__ import annotations
 
+import json
 import logging
 import random
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import List, Optional, Set
 
 from instagrapi import Client
+from instagrapi.exceptions import (
+    ChallengeRequired,
+    ClientError,
+    UserNotFound,
+)
 from instagrapi.types import Media, User
 
 logger = logging.getLogger(__name__)
+
+FLAGGED_FILE = Path("flagged_accounts.json")
+
+
+# ---------------------------------------------------------------------------
+# Flagged-account tracker
+# ---------------------------------------------------------------------------
+
+def _load_flagged() -> dict:
+    if FLAGGED_FILE.exists():
+        with open(FLAGGED_FILE) as fh:
+            return json.load(fh)
+    return {}
+
+
+def _save_flagged(data: dict) -> None:
+    with open(FLAGGED_FILE, "w") as fh:
+        json.dump(data, fh, indent=2)
+
+
+def _flag_account(username: str, reason: str) -> None:
+    flagged = _load_flagged()
+    flagged[username] = {
+        "reason": reason,
+        "flagged_at": datetime.now().isoformat(),
+    }
+    _save_flagged(flagged)
+    logger.warning("Flagged @%s: %s", username, reason)
 
 
 class EngagementManager:
@@ -36,7 +76,6 @@ class EngagementManager:
         self._comment_templates = comment_templates or ["Great post!"]
         self._delay_min = delay_min
         self._delay_max = delay_max
-        # Keep track of media we've already interacted with during this run
         self._seen: Set[str] = set()
 
     # ------------------------------------------------------------------
@@ -45,14 +84,23 @@ class EngagementManager:
 
     def engage_with_targets(self) -> None:
         """Like (and optionally comment on) recent posts of every target
-        account."""
+        account.  Skips and flags accounts that can't be found."""
         for username in self._target_accounts:
             try:
                 self._engage_account(username)
+            except UserNotFound:
+                _flag_account(username, "Account not found (renamed or deleted)")
+            except ClientError as exc:
+                error_msg = str(exc).lower()
+                if "not found" in error_msg or "user" in error_msg:
+                    _flag_account(username, f"Client error: {exc}")
+                else:
+                    logger.exception("Error engaging with @%s", username)
+            except ChallengeRequired:
+                logger.error("Challenge required — stopping engagement to avoid further blocks")
+                return
             except Exception:
-                logger.exception(
-                    "Error engaging with account %s", username
-                )
+                logger.exception("Unexpected error engaging with @%s", username)
 
     def discover_and_engage(self) -> None:
         """Find recent top posts for each discovery hashtag, like them, and
@@ -60,8 +108,33 @@ class EngagementManager:
         for tag in self._discovery_hashtags:
             try:
                 self._engage_hashtag(tag)
+            except ChallengeRequired:
+                logger.error("Challenge required — stopping discovery to avoid further blocks")
+                return
             except Exception:
                 logger.exception("Error engaging with hashtag #%s", tag)
+
+    def show_flagged(self) -> str:
+        """Return a human-readable summary of all flagged accounts."""
+        flagged = _load_flagged()
+        if not flagged:
+            return "No flagged accounts."
+        lines = ["Flagged accounts:", ""]
+        for username, info in flagged.items():
+            lines.append(f"  @{username}")
+            lines.append(f"    Reason:  {info['reason']}")
+            lines.append(f"    Flagged: {info['flagged_at']}")
+            lines.append("")
+        return "\n".join(lines)
+
+    @staticmethod
+    def clear_flagged() -> int:
+        """Remove the flagged-accounts file. Returns count of cleared entries."""
+        flagged = _load_flagged()
+        count = len(flagged)
+        if FLAGGED_FILE.exists():
+            FLAGGED_FILE.unlink()
+        return count
 
     # ------------------------------------------------------------------
     # Internals
@@ -69,10 +142,30 @@ class EngagementManager:
 
     def _engage_account(self, username: str) -> None:
         logger.info("Engaging with @%s …", username)
-        user_id = self._api.user_id_from_username(username)
-        medias: List[Media] = self._api.user_medias(
-            user_id, amount=self._likes_per_account
-        )
+        try:
+            user_id = self._api.user_id_from_username(username)
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "not found" in error_msg or "does not exist" in error_msg:
+                _flag_account(username, "Account not found (renamed or deleted)")
+                return
+            raise
+
+        try:
+            medias: List[Media] = self._api.user_medias(
+                user_id, amount=self._likes_per_account
+            )
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "private" in error_msg or "not accessible" in error_msg:
+                _flag_account(username, "Account is private or not accessible")
+                return
+            raise
+
+        if not medias:
+            _flag_account(username, "No recent posts found (may be inactive)")
+            return
+
         for media in medias:
             self._interact(media)
 
@@ -94,6 +187,9 @@ class EngagementManager:
         try:
             self._api.media_like(media.id)
             logger.info("Liked media %s by @%s", media.pk, media.user.username)
+        except ChallengeRequired:
+            logger.error("Challenge required on like — stopping")
+            raise
         except Exception:
             logger.exception("Failed to like media %s", media.pk)
 
@@ -105,10 +201,12 @@ class EngagementManager:
                 logger.info(
                     "Commented on media %s: %s", media.pk, comment_text
                 )
+            except ChallengeRequired:
+                logger.error("Challenge required on comment — stopping")
+                raise
             except Exception:
                 logger.exception("Failed to comment on media %s", media.pk)
 
-        # Rate-limit pause
         self._wait()
 
     def _wait(self) -> None:
