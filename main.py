@@ -98,6 +98,26 @@ def cmd_generate(args: argparse.Namespace) -> None:
     print(f"\nGenerated {total} media files in {config.generation.media_dir}/")
 
 
+def cmd_brand_kit(args: argparse.Namespace) -> None:
+    """Download existing posts from your account as a brand kit."""
+    config = load_config(args.config)
+    _setup_logging(config.log_level, config.log_file)
+
+    from instagram_agent.client import InstagramClient
+    from instagram_agent.brand_kit import BrandKitDownloader
+
+    client = InstagramClient(config.username, config.password)
+    client.login()
+
+    downloader = BrandKitDownloader(client.api, config.content.media_dir)
+    saved = downloader.download(config.username, count=args.count)
+
+    print(f"\nDownloaded {len(saved)} photos to {downloader.kit_dir}/")
+    print("These will now be used as backgrounds when generating content.")
+    print("Re-run your theme to regenerate with your photos:")
+    print('  python3 main.py theme "Your theme"')
+
+
 def cmd_flagged(args: argparse.Namespace) -> None:
     """Show or clear flagged accounts."""
     from instagram_agent.engagement import EngagementManager
@@ -158,6 +178,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_gen.add_argument("--reels", type=int, default=0)
     p_gen.add_argument("--config", default="config.yaml")
 
+    # -- brand-kit ---------------------------------------------------------
+    p_kit = sub.add_parser("brand-kit", help="Download your existing posts as a brand kit")
+    p_kit.add_argument("--count", type=int, default=30, help="Number of recent posts to download")
+    p_kit.add_argument("--config", default="config.yaml")
+
     # -- flagged -----------------------------------------------------------
     p_flag = sub.add_parser("flagged", help="Show or clear flagged accounts")
     p_flag.add_argument("--clear", action="store_true", help="Clear all flagged accounts")
@@ -178,6 +203,7 @@ def main(argv: list[str] | None = None) -> None:
         "theme": cmd_theme,
         "calendar": cmd_calendar,
         "generate": cmd_generate,
+        "brand-kit": cmd_brand_kit,
         "flagged": cmd_flagged,
         "run": cmd_run,
     }

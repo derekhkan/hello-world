@@ -1,17 +1,17 @@
-"""Content generation — create images, stories, and video reels
-programmatically.
+"""Content generation — create images, stories, and video reels.
 
-Two modes of operation:
+Three modes of operation:
 
-1. **Template mode** (default, no API key required)
-   Uses Pillow to render text-on-background graphics from a pool of quotes,
-   colours, and fonts.
+1. **Brand kit mode** (preferred) — uses your own downloaded Instagram
+   photos as backgrounds with a dark overlay and text on top.
 
-2. **AI mode** (requires an OpenAI API key)
-   Calls DALL-E to generate images from text prompts.
+2. **Template mode** (fallback) — renders text on a solid-colour
+   background using Pillow.
 
-Generated files are placed into the appropriate ``media/`` subdirectory so
-the ``ContentManager`` picks them up on the next scheduled publish.
+3. **AI mode** (optional, requires OpenAI key) — generates images via
+   DALL-E.
+
+Generated files land in ``media/{posts,stories,reels}/``.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 logger = logging.getLogger(__name__)
 
@@ -61,27 +61,26 @@ POST_SIZE = (1080, 1080)
 STORY_SIZE = (1080, 1920)
 REEL_SIZE = (1080, 1920)
 
+BRAND_KIT_DIR = Path("media/brand_kit")
+
 
 # ---------------------------------------------------------------------------
-# Data classes for generation config
+# Config
 # ---------------------------------------------------------------------------
 
 @dataclass
 class GenerationConfig:
     enabled: bool = False
-    # Template settings
     quotes: List[str] = field(default_factory=lambda: list(DEFAULT_QUOTES))
     palettes: list[dict] = field(default_factory=lambda: list(DEFAULT_PALETTES))
-    # AI generation (DALL-E)
     ai_enabled: bool = False
     openai_api_key: str = ""
     ai_prompts: List[str] = field(default_factory=list)
-    # Where to place generated files
     media_dir: str = "./media"
 
 
 # ---------------------------------------------------------------------------
-# Template-based image generator
+# Font helpers
 # ---------------------------------------------------------------------------
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
@@ -90,11 +89,11 @@ def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    """Try to load a TrueType font; fall back to the built-in bitmap font."""
     candidates = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
+        "/Library/Fonts/Arial Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     ]
     for path in candidates:
@@ -103,12 +102,17 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+# ---------------------------------------------------------------------------
+# Text drawing
+# ---------------------------------------------------------------------------
+
 def _draw_centered_text(
     draw: ImageDraw.ImageDraw,
     text: str,
     size: tuple[int, int],
     fg_color: tuple[int, int, int],
     font_size: int = 60,
+    shadow: bool = False,
 ) -> None:
     """Word-wrap *text* and draw it centered on the canvas."""
     font = _load_font(font_size)
@@ -118,15 +122,89 @@ def _draw_centered_text(
     text_h = bbox[3] - bbox[1]
     x = (size[0] - text_w) / 2
     y = (size[1] - text_h) / 2
+
+    if shadow:
+        draw.multiline_text(
+            (x + 3, y + 3), wrapped, fill=(0, 0, 0), font=font, align="center"
+        )
+
     draw.multiline_text((x, y), wrapped, fill=fg_color, font=font, align="center")
 
+
+# ---------------------------------------------------------------------------
+# Brand kit image (photo background + dark overlay + white text)
+# ---------------------------------------------------------------------------
+
+def _get_brand_kit_photos() -> list[Path]:
+    """Return all photos in the brand kit directory."""
+    if not BRAND_KIT_DIR.exists():
+        return []
+    return sorted(
+        p for p in BRAND_KIT_DIR.iterdir()
+        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}
+    )
+
+
+def generate_branded_image(
+    text: str,
+    size: tuple[int, int] = POST_SIZE,
+    overlay_opacity: float = 0.55,
+) -> Optional[Image.Image]:
+    """Create an image using a random brand kit photo as the background.
+
+    Returns ``None`` if no brand kit photos are available.
+    """
+    photos = _get_brand_kit_photos()
+    if not photos:
+        return None
+
+    bg_path = random.choice(photos)
+    bg = Image.open(bg_path).convert("RGB")
+
+    # Crop/resize to target size (center crop)
+    bg = _center_crop_resize(bg, size)
+
+    # Darken the photo so white text is readable
+    dark_overlay = Image.new("RGB", size, (0, 0, 0))
+    bg = Image.blend(bg, dark_overlay, overlay_opacity)
+
+    # Slight blur to push background further back
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=2))
+
+    # Draw text in white with shadow
+    draw = ImageDraw.Draw(bg)
+    font_size = 60 if size[0] >= 1080 else 40
+    _draw_centered_text(draw, text, size, (255, 255, 255), font_size, shadow=True)
+
+    return bg
+
+
+def _center_crop_resize(img: Image.Image, target: tuple[int, int]) -> Image.Image:
+    """Resize and center-crop *img* to exactly *target* dimensions."""
+    tw, th = target
+    iw, ih = img.size
+
+    # Scale so the smaller dimension matches the target
+    scale = max(tw / iw, th / ih)
+    new_w = int(iw * scale)
+    new_h = int(ih * scale)
+    img = img.resize((new_w, new_h), Image.LANCZOS)
+
+    # Center crop
+    left = (new_w - tw) // 2
+    top = (new_h - th) // 2
+    return img.crop((left, top, left + tw, top + th))
+
+
+# ---------------------------------------------------------------------------
+# Template-based (solid colour background)
+# ---------------------------------------------------------------------------
 
 def generate_template_image(
     text: str,
     size: tuple[int, int] = POST_SIZE,
     palette: Optional[dict] = None,
 ) -> Image.Image:
-    """Return a Pillow ``Image`` with *text* rendered on a coloured background."""
     palette = palette or random.choice(DEFAULT_PALETTES)
     bg = _hex_to_rgb(palette["bg"])
     fg = _hex_to_rgb(palette["fg"])
@@ -141,7 +219,24 @@ def generate_template_image(
 
 
 # ---------------------------------------------------------------------------
-# AI-based image generator (DALL-E)
+# Smart image generator — brand kit first, template fallback
+# ---------------------------------------------------------------------------
+
+def generate_image(
+    text: str,
+    size: tuple[int, int] = POST_SIZE,
+    palette: Optional[dict] = None,
+) -> Image.Image:
+    """Generate an image using the brand kit if available, otherwise fall
+    back to template mode."""
+    branded = generate_branded_image(text, size)
+    if branded is not None:
+        return branded
+    return generate_template_image(text, size, palette)
+
+
+# ---------------------------------------------------------------------------
+# AI image generator (DALL-E)
 # ---------------------------------------------------------------------------
 
 def generate_ai_image(
@@ -150,10 +245,6 @@ def generate_ai_image(
     size: str = "1024x1024",
     output_path: Optional[Path] = None,
 ) -> Path:
-    """Call the OpenAI DALL-E API and save the resulting image.
-
-    Returns the path to the saved image file.
-    """
     try:
         from openai import OpenAI
     except ImportError:
@@ -173,7 +264,6 @@ def generate_ai_image(
 
     image_url = response.data[0].url
 
-    # Download the image
     import urllib.request
     if output_path is None:
         output_path = Path(f"/tmp/dalle_{uuid.uuid4().hex[:8]}.png")
@@ -184,7 +274,7 @@ def generate_ai_image(
 
 
 # ---------------------------------------------------------------------------
-# Video reel generator (slideshow from images)
+# Video reel generator
 # ---------------------------------------------------------------------------
 
 def generate_slideshow_reel(
@@ -195,11 +285,6 @@ def generate_slideshow_reel(
     size: tuple[int, int] = REEL_SIZE,
     palettes: Optional[list[dict]] = None,
 ) -> Path:
-    """Create a simple slideshow video from a list of text slides.
-
-    Each slide is rendered as a template image and held for
-    *duration_per_slide* seconds. The result is an ``.mp4`` file.
-    """
     try:
         from moviepy.editor import ImageClip, concatenate_videoclips
     except ImportError:
@@ -211,9 +296,7 @@ def generate_slideshow_reel(
     palettes = palettes or DEFAULT_PALETTES
     clips = []
     for i, text in enumerate(texts):
-        palette = palettes[i % len(palettes)]
-        img = generate_template_image(text, size=size, palette=palette)
-        # moviepy works with numpy arrays
+        img = generate_image(text, size=size, palette=palettes[i % len(palettes)])
         import numpy as np
         arr = np.array(img)
         clip = ImageClip(arr, duration=duration_per_slide)
@@ -228,7 +311,7 @@ def generate_slideshow_reel(
 
 
 # ---------------------------------------------------------------------------
-# High-level generator that produces ready-to-publish files
+# High-level generator
 # ---------------------------------------------------------------------------
 
 class ContentGenerator:
@@ -242,18 +325,14 @@ class ContentGenerator:
         for sub in ("posts", "reels", "stories"):
             (self._media_dir / sub).mkdir(parents=True, exist_ok=True)
 
-    # -- Posts -------------------------------------------------------------
-
     def generate_post(self, text: Optional[str] = None) -> Path:
-        """Create a single post image and save it to ``media/posts/``."""
         self._ensure_dirs()
         text = text or random.choice(self._cfg.quotes)
-        img = generate_template_image(text, POST_SIZE)
+        img = generate_image(text, POST_SIZE)
         fname = f"post_{uuid.uuid4().hex[:8]}.png"
         path = self._media_dir / "posts" / fname
         img.save(str(path))
 
-        # Write sidecar caption
         caption_path = path.with_suffix(".txt")
         caption_path.write_text(text)
 
@@ -261,7 +340,6 @@ class ContentGenerator:
         return path
 
     def generate_ai_post(self, prompt: Optional[str] = None) -> Path:
-        """Generate a post image using DALL-E."""
         self._ensure_dirs()
         if not self._cfg.openai_api_key:
             raise ValueError("OpenAI API key is required for AI generation")
@@ -274,27 +352,21 @@ class ContentGenerator:
         caption_path.write_text(prompt)
         return path
 
-    # -- Stories -----------------------------------------------------------
-
     def generate_story(self, text: Optional[str] = None) -> Path:
-        """Create a story graphic (1080x1920) and save it to ``media/stories/``."""
         self._ensure_dirs()
         text = text or random.choice(self._cfg.quotes)
-        img = generate_template_image(text, STORY_SIZE)
+        img = generate_image(text, STORY_SIZE)
         fname = f"story_{uuid.uuid4().hex[:8]}.png"
         path = self._media_dir / "stories" / fname
         img.save(str(path))
         logger.info("Generated story: %s", path)
         return path
 
-    # -- Reels -------------------------------------------------------------
-
     def generate_reel(
         self,
         texts: Optional[List[str]] = None,
         slides: int = 4,
     ) -> Path:
-        """Create a short slideshow reel from quotes."""
         self._ensure_dirs()
         if texts is None:
             texts = random.sample(
@@ -310,15 +382,12 @@ class ContentGenerator:
         logger.info("Generated reel: %s", path)
         return path
 
-    # -- Batch -------------------------------------------------------------
-
     def generate_batch(
         self,
         posts: int = 1,
         stories: int = 1,
         reels: int = 0,
     ) -> dict[str, list[Path]]:
-        """Generate a batch of content across all types."""
         results: dict[str, list[Path]] = {"posts": [], "stories": [], "reels": []}
 
         for _ in range(posts):
