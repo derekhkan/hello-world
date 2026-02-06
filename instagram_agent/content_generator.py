@@ -193,9 +193,9 @@ def generate_gemini_background(
 
     # Try multiple model names — availability depends on API tier
     MODEL_CANDIDATES = [
-        "gemini-2.0-flash-exp",
-        "gemini-2.0-flash-preview-image-generation",
-        "imagen-3.0-generate-002",
+        "gemini-2.0-flash-exp-image-generation",
+        "gemini-2.5-flash-image",
+        "gemini-3-pro-image-preview",
     ]
 
     try:
