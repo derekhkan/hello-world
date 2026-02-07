@@ -50,6 +50,10 @@ class EngagementConfig:
 class AppConfig:
     username: str = ""
     password: str = ""
+    # Graph API (official — no challenge errors)
+    graph_api_token: str = ""
+    instagram_account_id: str = ""
+    facebook_page_id: str = ""
     content: ContentConfig = field(default_factory=ContentConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
     engagement: EngagementConfig = field(default_factory=EngagementConfig)
@@ -117,9 +121,14 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         delay_max=eng.get("delay", {}).get("max_seconds", 90),
     )
 
+    graph_raw = account.get("graph_api", {})
+
     return AppConfig(
         username=account.get("username", ""),
         password=account.get("password", ""),
+        graph_api_token=graph_raw.get("access_token", ""),
+        instagram_account_id=graph_raw.get("instagram_account_id", ""),
+        facebook_page_id=graph_raw.get("facebook_page_id", ""),
         content=content,
         generation=generation,
         engagement=engagement,

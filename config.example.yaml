@@ -6,6 +6,13 @@ account:
   username: "your_username"
   password: "your_password"
 
+  # Instagram Graph API (recommended — no challenge errors)
+  # Get these from developers.facebook.com after linking your IG Business account
+  graph_api:
+    access_token: ""                # Page Access Token from Graph API Explorer
+    instagram_account_id: ""        # Your IG Business Account ID
+    facebook_page_id: ""            # Your Facebook Page ID
+
 # ---------------------------------------------------------------------------
 # Content publishing
 # ---------------------------------------------------------------------------
