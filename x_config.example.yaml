@@ -1,0 +1,56 @@
+# X/Twitter Agent Configuration
+# Copy this to x_config.yaml and fill in your credentials.
+# Secrets can also be set via environment variables (see below).
+
+twitter:
+  # Env: X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, X_BEARER_TOKEN
+  api_key: "your-api-key"
+  api_secret: "your-api-secret"
+  access_token: "your-access-token"
+  access_token_secret: "your-access-token-secret"
+  bearer_token: "your-bearer-token"
+
+llm:
+  # Env: LLM_API_KEY
+  provider: "anthropic"
+  api_key: "your-anthropic-api-key"
+  model: "claude-sonnet-4-5-20250929"
+
+schedule:
+  posts_per_day: 2
+  default_times:
+    - "08:00"    # 8 AM EST
+    - "17:00"    # 5 PM EST
+  timezone: "US/Eastern"
+
+  ab_testing:
+    enabled: true
+    # Time slots to cycle through for A/B testing
+    morning_slots:
+      - "07:00"
+      - "08:00"
+      - "09:00"
+      - "10:00"
+    evening_slots:
+      - "16:00"
+      - "17:00"
+      - "18:00"
+      - "19:00"
+    # Probability of exploring a random time slot (vs exploiting the best known)
+    epsilon: 0.3
+    # Minimum posts at a time slot before trusting its score
+    min_samples: 5
+
+news_sources:
+  - url: "https://www.coindesk.com/arc/outboundfeeds/rss/"
+    name: "CoinDesk"
+    type: "rss"
+  - url: "https://www.theblock.co/"
+    name: "The Block"
+    type: "html"
+  - url: "https://cointelegraph.com/rss"
+    name: "CoinTelegraph"
+    type: "rss"
+
+# Directory for persistent state (calendar rotation, A/B results, post history)
+data_dir: "data"
