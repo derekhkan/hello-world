@@ -1,0 +1,10 @@
+# Secrets
+x_config.yaml
+
+# Persistent state
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
