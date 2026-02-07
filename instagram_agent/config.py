@@ -106,6 +106,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         gemini_api_key=ai_raw.get("gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", ""),
         ai_prompts=ai_raw.get("prompts", []),
         media_dir=content_raw.get("media_dir", "./media"),
+        weekly_themes=gen_raw.get("weekly_themes", []),
     )
 
     engagement = EngagementConfig(

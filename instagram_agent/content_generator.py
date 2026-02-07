@@ -106,6 +106,7 @@ class GenerationConfig:
     gemini_api_key: str = ""
     ai_prompts: List[str] = field(default_factory=list)
     media_dir: str = "./media"
+    weekly_themes: List[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

@@ -44,6 +44,19 @@ content:
 generation:
   enabled: true
 
+  # Weekly themes — the agent auto-rotates to the next theme when the
+  # current calendar is fully published.  Loops back to the first theme
+  # after exhausting the list.
+  weekly_themes:
+    - "No Excuses"
+    - "Staying Disciplined"
+    - "Building Strength"
+    - "Earning the Weekend"
+    - "Mental Toughness"
+    - "Leading by Example"
+    - "Showing Up Daily"
+    - "Push Through"
+
   # Quotes / text overlays used for template-based images
   quotes:
     - "Create the things you wish existed."

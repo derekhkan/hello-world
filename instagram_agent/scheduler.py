@@ -4,10 +4,16 @@ posting, and engagement together and runs them on a configurable timetable.
 Supports two publishing backends:
 1. **Graph API** (preferred) — uses Meta's official API, no challenge errors
 2. **instagrapi** (fallback) — private API, used for engagement (likes/comments)
+
+Auto-rotation: when every entry in the current calendar is published, the
+scheduler automatically picks the next theme from ``weekly_themes`` in the
+config, regenerates a full 7-day calendar with fresh Gemini images, and
+continues publishing without manual intervention.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import time
@@ -261,6 +267,71 @@ class AgentScheduler:
                 logger.exception("Failed to publish calendar entry %s", entry.id)
 
     # ------------------------------------------------------------------
+    # Auto theme rotation
+    # ------------------------------------------------------------------
+
+    THEME_STATE_FILE = Path(".theme_index.json")
+
+    def _get_theme_index(self) -> int:
+        """Read the current position in the weekly_themes list."""
+        if self.THEME_STATE_FILE.exists():
+            try:
+                data = json.loads(self.THEME_STATE_FILE.read_text())
+                return data.get("index", 0)
+            except Exception:
+                pass
+        return 0
+
+    def _save_theme_index(self, index: int) -> None:
+        self.THEME_STATE_FILE.write_text(json.dumps({"index": index}))
+
+    def _calendar_is_complete(self) -> bool:
+        """Return True if all calendar entries have been published."""
+        if self._calendar is None:
+            return True
+        return all(e.published for e in self._calendar.entries)
+
+    def _rotate_theme(self) -> None:
+        """Pick the next theme, regenerate the calendar, and reload."""
+        themes = self._config.generation.weekly_themes
+        if not themes:
+            logger.info("No weekly_themes configured — cannot auto-rotate")
+            return
+
+        idx = self._get_theme_index()
+        next_idx = (idx + 1) % len(themes)
+        theme = themes[next_idx]
+        self._save_theme_index(next_idx)
+
+        logger.info(
+            "Auto-rotating to next theme: \"%s\" (%d/%d)",
+            theme, next_idx + 1, len(themes),
+        )
+
+        # Clear out old media so we start fresh
+        media_dir = Path(self._config.content.media_dir)
+        for sub in ("posts", "stories", "reels"):
+            d = media_dir / sub
+            if d.exists():
+                for f in d.iterdir():
+                    if f.is_file() and f.name != ".gitkeep":
+                        f.unlink()
+
+        # Generate a fresh calendar
+        from instagram_agent.content_calendar import ThemePlanner
+        planner = ThemePlanner(self._config.generation)
+        self._calendar = planner.plan(theme)
+        logger.info(
+            "New calendar generated: %d entries for \"%s\"",
+            len(self._calendar.entries), theme,
+        )
+
+    def _check_rotation(self) -> None:
+        """Called periodically — rotate theme if current calendar is done."""
+        if self._calendar_is_complete():
+            self._rotate_theme()
+
+    # ------------------------------------------------------------------
     # Schedule registration
     # ------------------------------------------------------------------
 
@@ -283,11 +354,21 @@ class AgentScheduler:
                 logger.info("Scheduled story publishing at %s", t)
 
     def _register_calendar_job(self) -> None:
-        if self._calendar is not None:
-            schedule.every(1).minutes.do(
-                self._safe_run, self._publish_calendar_entries
+        # Publish due calendar entries every minute
+        schedule.every(1).minutes.do(
+            self._safe_run, self._publish_calendar_entries
+        )
+        logger.info("Scheduled calendar publisher (checks every minute)")
+
+        # Check for theme rotation every 30 minutes
+        if self._config.generation.weekly_themes:
+            schedule.every(30).minutes.do(
+                self._safe_run, self._check_rotation
             )
-            logger.info("Scheduled calendar publisher (checks every minute)")
+            logger.info(
+                "Scheduled auto theme rotation (%d themes configured)",
+                len(self._config.generation.weekly_themes),
+            )
 
     def _register_engagement_jobs(self) -> None:
         if not self._config.engagement.enabled or self._engagement is None:
@@ -310,6 +391,8 @@ class AgentScheduler:
             "Running all jobs once (publishing via %s) …",
             "Graph API" if self._graph else "instagrapi",
         )
+        # Auto-rotate theme if the calendar is fully published
+        self._safe_run(self._check_rotation)
         self._safe_run(self._publish_next_post)
         self._safe_run(self._publish_next_reel)
         self._safe_run(self._publish_next_story)
