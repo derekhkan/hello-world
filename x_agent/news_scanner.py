@@ -3,9 +3,9 @@
 import logging
 import json
 import os
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
-import feedparser
 import requests
 from bs4 import BeautifulSoup
 
@@ -99,15 +99,37 @@ Return ONLY valid JSON, no other text."""
         return self._scan_html(source, max_articles)
 
     def _scan_rss(self, source: dict, max_articles: int) -> list[dict]:
-        """Parse an RSS feed."""
-        feed = feedparser.parse(source["url"], agent=USER_AGENT)
+        """Parse an RSS feed using built-in XML parser."""
+        headers = {"User-Agent": USER_AGENT}
+        resp = requests.get(source["url"], headers=headers, timeout=15)
+        resp.raise_for_status()
+
+        root = ET.fromstring(resp.content)
+        # Handle both RSS and Atom namespaces
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+
         articles = []
-        for entry in feed.entries[:max_articles]:
+        # Try RSS 2.0 format (channel/item)
+        items = root.findall(".//item")
+        if not items:
+            # Try Atom format
+            items = root.findall(".//atom:entry", ns)
+
+        for item in items[:max_articles]:
+            title = item.findtext("title") or item.findtext("atom:title", "", ns)
+            link = item.findtext("link") or ""
+            if not link:
+                link_el = item.find("atom:link", ns)
+                if link_el is not None:
+                    link = link_el.get("href", "")
+            summary = item.findtext("description") or item.findtext("atom:summary", "", ns)
+            published = item.findtext("pubDate") or item.findtext("atom:published", "", ns)
+
             articles.append({
-                "title": entry.get("title", ""),
-                "summary": _clean_html(entry.get("summary", "")),
-                "url": entry.get("link", ""),
-                "published": entry.get("published", ""),
+                "title": title.strip() if title else "",
+                "summary": _clean_html(summary) if summary else "",
+                "url": link.strip(),
+                "published": published.strip() if published else "",
                 "source": source["name"],
             })
         return articles
