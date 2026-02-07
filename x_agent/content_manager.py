@@ -13,6 +13,7 @@ from x_agent.content_generator import ContentGenerator
 from x_agent.content_calendar import ContentCalendar
 from x_agent.scheduler import ABScheduler
 from x_agent.engagement import EngagementTracker
+from x_agent.approval_queue import ApprovalQueue
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class ContentManager:
         self.calendar = calendar
         self.scheduler = scheduler
         self.engagement = EngagementTracker(client, scheduler, calendar)
+        self.queue = ApprovalQueue(config)
         self.tz = pytz.timezone(config.get("schedule", {}).get("timezone", "US/Eastern"))
 
     def run_once(self, dry_run: bool = False) -> dict:
@@ -120,6 +122,48 @@ class ContentManager:
         assignments = self.calendar.next_batch(count)
         return self.generator.generate_batch(assignments, takeaways)
 
+    def generate_to_queue(self, count: int = 2) -> list[dict]:
+        """Generate tweets and add them to the approval queue."""
+        articles = self.news_scanner.load_cache() or self.news_scanner.scan_all()
+        takeaways = self.news_scanner.get_takeaways(articles, count=count)
+        assignments = self.calendar.next_batch(count)
+        tweets = self.generator.generate_batch(assignments, takeaways)
+
+        results = []
+        for t in tweets:
+            idx = self.queue.add(t)
+            results.append({"index": idx, **t})
+        return results
+
+    def post_approved(self) -> dict | None:
+        """Post the next approved tweet from the queue."""
+        item = self.queue.pop_next_approved()
+        if not item:
+            return None
+
+        idx, entry = item
+        logger.info(f"Posting approved tweet #{idx}...")
+        result = self.client.post_tweet(entry["tweet"])
+
+        now = datetime.now(self.tz)
+        time_slot = now.strftime("%H:%M")
+        self.calendar.record_post({
+            "id": result["id"],
+            "tweet": entry["tweet"],
+            "pillar": entry.get("pillar"),
+            "format": entry.get("format"),
+            "posted_at": now.isoformat(),
+            "time_slot": time_slot,
+        })
+        self.queue.mark_posted(idx, result["id"])
+
+        return {
+            "tweet": entry["tweet"],
+            "tweet_id": result["id"],
+            "pillar": entry.get("pillar"),
+            "time_slot": time_slot,
+        }
+
     def check_engagement(self) -> list[dict]:
         """Update engagement metrics for recent posts."""
         return self.engagement.update_recent()
@@ -132,20 +176,38 @@ class ContentManager:
         """Get A/B test report."""
         return self.scheduler.get_report()
 
-    def run_daemon(self, dry_run: bool = False):
+    def run_daemon(self, dry_run: bool = False, approval_mode: bool = False):
         """Run as a daemon, posting at scheduled times.
+
+        Args:
+            dry_run: Generate but don't post.
+            approval_mode: If True, only post from the approved queue.
+                Generate tweets to the queue instead of posting directly.
 
         Picks today's times via A/B scheduler, schedules posts, and also
         periodically checks engagement on recent tweets.
         """
         morning, evening = self.scheduler.pick_times()
         logger.info(f"Today's schedule: morning={morning}, evening={evening}")
+        if approval_mode:
+            logger.info("Approval mode ON. Will generate to queue and post approved tweets only.")
 
         def _post_job():
             try:
-                result = self.run_once(dry_run=dry_run)
-                status = "DRY RUN" if dry_run else "POSTED"
-                logger.info(f"[{status}] {result['tweet'][:80]}...")
+                if approval_mode:
+                    # Try to post from approved queue first
+                    result = self.post_approved()
+                    if result:
+                        logger.info(f"[POSTED from queue] {result['tweet'][:80]}...")
+                    else:
+                        # No approved tweets. Generate to queue for review
+                        generated = self.generate_to_queue(count=1)
+                        logger.info(f"[QUEUED for review] {generated[0]['tweet'][:80]}...")
+                        logger.info("Run 'python main_x.py review' to approve pending tweets.")
+                else:
+                    result = self.run_once(dry_run=dry_run)
+                    status = "DRY RUN" if dry_run else "POSTED"
+                    logger.info(f"[{status}] {result['tweet'][:80]}...")
             except Exception as e:
                 logger.error(f"Post job failed: {e}", exc_info=True)
 

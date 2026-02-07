@@ -8,6 +8,7 @@ from x_agent.content_calendar import ContentCalendar
 from x_agent.scheduler import ABScheduler
 from x_agent.engagement import EngagementTracker
 from x_agent.content_manager import ContentManager
+from x_agent.approval_queue import ApprovalQueue
 
 __all__ = [
     "load_config",

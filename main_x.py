@@ -2,9 +2,12 @@
 """X/Twitter Agent — CLI entry point.
 
 Usage:
-    python main_x.py run [--dry-run]         Start daemon (posts at scheduled times)
+    python main_x.py run [--approval]        Start daemon (posts at scheduled times)
     python main_x.py post [--dry-run]        Run pipeline once (scan → generate → post)
-    python main_x.py preview [--count N]     Generate tweets for preview (no posting)
+    python main_x.py generate [--count N]    Generate tweets to approval queue
+    python main_x.py review                  Review pending tweets (approve/reject/edit)
+    python main_x.py post-approved           Post next approved tweet from queue
+    python main_x.py preview [--count N]     Generate tweets for preview (no queue)
     python main_x.py scan-news               Scan news sources and show takeaways
     python main_x.py engagement [--days N]   Show engagement summary
     python main_x.py ab-report               Show A/B time slot test results
@@ -57,7 +60,7 @@ def build_manager(config: dict) -> ContentManager:
 
 def cmd_run(manager: ContentManager, args):
     """Start the daemon."""
-    manager.run_daemon(dry_run=args.dry_run)
+    manager.run_daemon(dry_run=args.dry_run, approval_mode=args.approval)
 
 
 def cmd_post(manager: ContentManager, args):
@@ -72,6 +75,92 @@ def cmd_post(manager: ContentManager, args):
         print(f"ID:      {result['tweet_id']}")
     if result.get("news"):
         print(f"News:    {result['news'].get('headline', '')}")
+
+
+def cmd_generate(manager: ContentManager, args):
+    """Generate tweets and add to approval queue."""
+    print(f"Generating {args.count} tweets...")
+    results = manager.generate_to_queue(count=args.count)
+    print(f"\nAdded {len(results)} tweets to approval queue:\n")
+    for r in results:
+        print(f"  [{r['index']}] ({r['pillar']}/{r['format']})")
+        print(f"      {r['tweet']}")
+        if r.get("news"):
+            print(f"      News: {r['news'].get('headline', '')}")
+        print()
+    print("Run 'python main_x.py review' to approve, reject, or edit them.")
+
+
+def cmd_review(manager: ContentManager, _args):
+    """Interactive review of pending tweets."""
+    queue = manager.queue
+    pending = queue.list_pending()
+
+    if not pending:
+        approved = queue.list_approved()
+        if approved:
+            print(f"No pending tweets. {len(approved)} approved tweet(s) ready to post.")
+            print("Run 'python main_x.py post-approved' to post the next one.")
+        else:
+            print("Queue is empty. Run 'python main_x.py generate' to create tweets.")
+        return
+
+    print(f"\n{len(pending)} tweet(s) pending review:\n")
+
+    for idx, entry in pending:
+        print(f"--- Tweet #{idx} ---")
+        print(f"Pillar:  {entry['pillar']}")
+        print(f"Format:  {entry['format']}")
+        print(f"Tweet:   {entry['tweet']}")
+        print(f"Chars:   {len(entry['tweet'])}")
+        if entry.get("news"):
+            print(f"News:    {entry['news'].get('headline', '')}")
+        print()
+
+        while True:
+            action = input("  [a]pprove / [e]dit+approve / [r]eject / [s]kip > ").strip().lower()
+
+            if action == "a":
+                queue.approve(idx)
+                print("  Approved.\n")
+                break
+            elif action == "e":
+                new_text = input("  New tweet text: ").strip()
+                if len(new_text) > 280:
+                    print(f"  Too long ({len(new_text)} chars). Try again.")
+                    continue
+                queue.approve(idx, edited_text=new_text)
+                print("  Approved with edits.\n")
+                break
+            elif action == "r":
+                feedback = input("  Feedback (optional, helps improve future tweets): ").strip()
+                queue.reject(idx, feedback=feedback)
+                print("  Rejected.\n")
+                break
+            elif action == "s":
+                print("  Skipped.\n")
+                break
+            else:
+                print("  Invalid. Type a, e, r, or s.")
+
+    approved = queue.list_approved()
+    print(f"\nDone. {len(approved)} tweet(s) approved and ready to post.")
+    if approved:
+        print("Run 'python main_x.py post-approved' to post the next one.")
+
+
+def cmd_post_approved(manager: ContentManager, _args):
+    """Post the next approved tweet from queue."""
+    result = manager.post_approved()
+    if not result:
+        print("No approved tweets in queue.")
+        print("Run 'python main_x.py generate' then 'python main_x.py review' first.")
+        return
+
+    print(f"\n[POSTED]")
+    print(f"Tweet:   {result['tweet']}")
+    print(f"ID:      {result['tweet_id']}")
+    print(f"Pillar:  {result.get('pillar', '')}")
 
 
 def cmd_preview(manager: ContentManager, args):
@@ -95,7 +184,7 @@ def cmd_scan_news(manager: ContentManager, _args):
     for i, t in enumerate(result["takeaways"], 1):
         print(f"\n  {i}. [{t.get('pillar', '?')}] {t.get('headline', '')}")
         print(f"     {t.get('insight', '')}")
-        print(f"     Source: {t.get('source_name', '')} — {t.get('source_url', '')}")
+        print(f"     Source: {t.get('source_name', '')} - {t.get('source_url', '')}")
 
 
 def cmd_engagement(manager: ContentManager, args):
@@ -135,7 +224,7 @@ def cmd_ab_report(manager: ContentManager, _args):
         print(f"\n{group.title()} Slots:")
         for slot, stats in sorted(slots.items()):
             conf = "***" if stats["n_samples"] >= 10 else "**" if stats["n_samples"] >= 5 else "*"
-            print(f"  {slot} — avg score: {stats['avg_score']:.2f} | n={stats['n_samples']} {conf}")
+            print(f"  {slot} avg score: {stats['avg_score']:.2f} | n={stats['n_samples']} {conf}")
             if stats.get("avg_metrics"):
                 m = stats["avg_metrics"]
                 print(f"         avg impressions: {m.get('impression_count', 0)}, likes: {m.get('like_count', 0)}, RTs: {m.get('retweet_count', 0)}")
@@ -157,13 +246,24 @@ def main():
     # run
     p_run = subparsers.add_parser("run", help="Start daemon")
     p_run.add_argument("--dry-run", action="store_true", help="Generate but don't post")
+    p_run.add_argument("--approval", action="store_true", help="Require approval before posting")
 
     # post
     p_post = subparsers.add_parser("post", help="Run pipeline once")
     p_post.add_argument("--dry-run", action="store_true", help="Generate but don't post")
 
+    # generate
+    p_gen = subparsers.add_parser("generate", help="Generate tweets to approval queue")
+    p_gen.add_argument("--count", type=int, default=2, help="Number of tweets")
+
+    # review
+    subparsers.add_parser("review", help="Review pending tweets")
+
+    # post-approved
+    subparsers.add_parser("post-approved", help="Post next approved tweet")
+
     # preview
-    p_preview = subparsers.add_parser("preview", help="Preview generated tweets")
+    p_preview = subparsers.add_parser("preview", help="Preview generated tweets (no queue)")
     p_preview.add_argument("--count", type=int, default=2, help="Number of tweets")
 
     # scan-news
@@ -185,6 +285,9 @@ def main():
     commands = {
         "run": cmd_run,
         "post": cmd_post,
+        "generate": cmd_generate,
+        "review": cmd_review,
+        "post-approved": cmd_post_approved,
         "preview": cmd_preview,
         "scan-news": cmd_scan_news,
         "engagement": cmd_engagement,
