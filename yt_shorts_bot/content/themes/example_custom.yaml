@@ -1,0 +1,47 @@
+# Example custom theme — copy and edit this file to create your own.
+# Load with:  yt-shorts-bot generate --custom-theme my_theme.yaml
+
+name: tiny_robots
+hook_templates:
+  - "Engineers built a robot the size of a grain of sand."
+  - "This robot is so small it can swim through your bloodstream."
+  - "The world's tiniest robot just performed surgery."
+
+scene_templates:
+  - image_prompt: >
+      microscopic robot on the head of a pin, electron microscope style,
+      hyper-detailed, scientific photography, 8k
+    narration: "At 0.5 millimeters, this robot fits on the head of a pin."
+    caption: "pin-sized robot 🤖"
+
+  - image_prompt: >
+      nano robot swimming through blood vessels, medical illustration,
+      red blood cells, cinematic, dramatic lighting
+    narration: "It can navigate your bloodstream to deliver medicine."
+    caption: "blood vessel bot 💉"
+
+  - image_prompt: >
+      swarm of tiny robots building a bridge, futuristic, tilt-shift photography,
+      miniature world, incredible detail
+    narration: "Working together, thousands of them can build structures."
+    caption: "robot swarm 🌉"
+
+  - image_prompt: >
+      tiny robot repairing a circuit board, macro photography, dramatic lighting,
+      soldering, sparks, detailed
+    narration: "They can repair electronics too small for human hands."
+    caption: "circuit repair 🔧"
+
+outro_templates:
+  - "Follow for more tiny robot content."
+  - "Subscribe — the future is small."
+
+tag_pool:
+  - shorts
+  - robots
+  - nano
+  - technology
+  - ai
+  - engineering
+  - science
+  - future

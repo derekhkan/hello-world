@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "yt-shorts-bot"
+version = "0.1.0"
+description = "Automated YouTube Shorts bot — generates AI videos and publishes them"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "moviepy>=1.0.3",
+    "Pillow>=10.0",
+    "edge-tts>=6.1",
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.1",
+    "google-auth-httplib2>=0.1",
+    "httpx>=0.25",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+
+[project.scripts]
+yt-shorts-bot = "yt_shorts_bot.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["yt_shorts_bot*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
