@@ -145,8 +145,16 @@ def _draw_centered_text(
     fg_color: tuple[int, int, int],
     font_size: int = 60,
     shadow: bool = False,
+    bg_box: bool = False,
+    bg_box_color: tuple[int, int, int] = (255, 255, 255),
+    bg_box_padding: int = 40,
+    bg_box_opacity: float = 0.92,
 ) -> None:
-    """Word-wrap *text* and draw it centered on the canvas."""
+    """Word-wrap *text* and draw it centered on the canvas.
+
+    If *bg_box* is True, draw a semi-opaque background rectangle behind
+    the text block for readability.
+    """
     font = _load_font(font_size)
     wrapped = textwrap.fill(text, width=22)
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font)
@@ -155,7 +163,31 @@ def _draw_centered_text(
     x = (size[0] - text_w) / 2
     y = (size[1] - text_h) / 2
 
-    if shadow:
+    if bg_box:
+        # Draw a rounded-corner-ish opaque box behind the text
+        pad = bg_box_padding
+        box_coords = (x - pad, y - pad, x + text_w + pad, y + text_h + pad)
+        # Use a temporary RGBA image for opacity
+        box_img = Image.new("RGBA", size, (0, 0, 0, 0))
+        box_draw = ImageDraw.Draw(box_img)
+        alpha = int(bg_box_opacity * 255)
+        box_draw.rounded_rectangle(
+            box_coords, radius=20,
+            fill=(*bg_box_color, alpha),
+        )
+        # Composite onto the main image via the draw's underlying image
+        base = draw._image  # the PIL Image behind this ImageDraw
+        if base.mode != "RGBA":
+            base_rgba = base.convert("RGBA")
+            composited = Image.alpha_composite(base_rgba, box_img)
+            base.paste(composited.convert("RGB"))
+        else:
+            composited = Image.alpha_composite(base, box_img)
+            base.paste(composited)
+        # Re-create draw since we pasted
+        draw = ImageDraw.Draw(base)
+
+    if shadow and not bg_box:
         draw.multiline_text(
             (x + 3, y + 3), wrapped, fill=(0, 0, 0), font=font, align="center"
         )
@@ -254,21 +286,24 @@ def generate_gemini_image(
     text: str,
     api_key: str,
     size: tuple[int, int] = POST_SIZE,
-    overlay_opacity: float = 0.45,
+    overlay_opacity: float = 0.20,
 ) -> Optional[Image.Image]:
-    """Generate a photorealistic B&W gym photo and overlay text on it."""
+    """Generate a photorealistic B&W gym photo with white text box + black text."""
     bg = generate_gemini_background(api_key, size)
     if bg is None:
         return None
 
-    # Apply a subtle dark overlay so text is readable
+    # Subtle dark overlay to deepen the B&W mood (lighter than before)
     dark = Image.new("RGB", size, (0, 0, 0))
     img = Image.blend(bg, dark, overlay_opacity)
 
-    # Draw text in white with shadow
+    # Draw black text on a white background box
     draw = ImageDraw.Draw(img)
     font_size = 64 if size[0] >= 1080 else 44
-    _draw_centered_text(draw, text, size, (255, 255, 255), font_size, shadow=True)
+    _draw_centered_text(
+        draw, text, size, (0, 0, 0), font_size,
+        bg_box=True, bg_box_color=(255, 255, 255), bg_box_opacity=0.92,
+    )
 
     return img
 
@@ -290,7 +325,7 @@ def _get_brand_kit_photos() -> list[Path]:
 def generate_branded_image(
     text: str,
     size: tuple[int, int] = POST_SIZE,
-    overlay_opacity: float = 0.55,
+    overlay_opacity: float = 0.25,
 ) -> Optional[Image.Image]:
     """Create an image using a random brand kit photo as the background.
 
@@ -306,17 +341,20 @@ def generate_branded_image(
     # Crop/resize to target size (center crop)
     bg = _center_crop_resize(bg, size)
 
-    # Darken the photo so white text is readable
+    # Subtle dark overlay to deepen the mood
     dark_overlay = Image.new("RGB", size, (0, 0, 0))
     bg = Image.blend(bg, dark_overlay, overlay_opacity)
 
     # Slight blur to push background further back
     bg = bg.filter(ImageFilter.GaussianBlur(radius=2))
 
-    # Draw text in white with shadow
+    # Draw black text on a white background box
     draw = ImageDraw.Draw(bg)
     font_size = 60 if size[0] >= 1080 else 40
-    _draw_centered_text(draw, text, size, (255, 255, 255), font_size, shadow=True)
+    _draw_centered_text(
+        draw, text, size, (0, 0, 0), font_size,
+        bg_box=True, bg_box_color=(255, 255, 255), bg_box_opacity=0.92,
+    )
 
     return bg
 
