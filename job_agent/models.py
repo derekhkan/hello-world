@@ -19,6 +19,8 @@ class JobBoard(str, enum.Enum):
     SPENCERSTUART = "spencerstuart"
     RUSSELLREYNOLDS = "russellreynolds"
     CAREERPAGES = "careerpages"
+    GREENHOUSE = "greenhouse"
+    LEVER = "lever"
 
 
 class ApplicationStatus(str, enum.Enum):

@@ -538,13 +538,15 @@ search:
   posted_within_days: 7
   boards:
     - linkedin
+    - greenhouse
+    - lever
     - heidrick
     - kornferry
     - spencerstuart
     - russellreynolds
     - careerpages
   max_applications_per_day: 25
-  auto_apply: false
+  auto_apply: true
 
 llm:
   provider: "openai"

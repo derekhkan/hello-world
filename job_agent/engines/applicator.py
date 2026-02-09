@@ -76,6 +76,8 @@ class ApplicatorEngine:
                 JobBoard.SPENCERSTUART: self._apply_external_only,
                 JobBoard.RUSSELLREYNOLDS: self._apply_external_only,
                 JobBoard.CAREERPAGES: self._apply_external_only,
+                JobBoard.GREENHOUSE: self._apply_greenhouse,
+                JobBoard.LEVER: self._apply_lever,
             }.get(job.board)
 
             if handler is None:
@@ -117,6 +119,127 @@ class ApplicatorEngine:
             f"URL saved for manual follow-up: {job.url}"
         )
         return True
+
+    def _apply_greenhouse(
+        self, application: ApplicationRecord, profile: UserProfile
+    ) -> bool:
+        """Submit application via Greenhouse Job Board API."""
+        import re
+        import requests
+
+        job = application.job
+        # Extract board token and job ID from external_id: gh_{token}_{id}
+        match = re.match(r"gh_(.+?)_(\d+)$", job.external_id)
+        if not match:
+            logger.warning(f"Cannot parse Greenhouse ID: {job.external_id}")
+            return self._apply_external_only(application, profile)
+
+        board_token = match.group(1)
+        job_id = match.group(2)
+        url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}"
+
+        # Build multipart form
+        form_data = {
+            "first_name": profile.first_name,
+            "last_name": profile.last_name,
+            "email": profile.email,
+            "phone": profile.phone,
+        }
+
+        if profile.linkedin_url:
+            form_data["urls[LinkedIn]"] = profile.linkedin_url
+
+        files = {}
+        # Attach resume
+        resume_path = application.tailored_resume_path or profile.resume_path
+        if resume_path:
+            from pathlib import Path
+            rp = Path(resume_path)
+            if rp.exists():
+                files["resume"] = (rp.name, rp.read_bytes(), "application/pdf")
+
+        # Attach cover letter
+        if application.cover_letter_path:
+            from pathlib import Path
+            cp = Path(application.cover_letter_path)
+            if cp.exists():
+                files["cover_letter"] = (cp.name, cp.read_bytes(), "text/plain")
+
+        try:
+            resp = requests.post(url, data=form_data, files=files, timeout=30)
+            if resp.status_code in (200, 201):
+                logger.info(
+                    f"Greenhouse API: submitted to {job.title} at {job.company}"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"Greenhouse API {resp.status_code}: {resp.text[:200]}"
+                )
+                # Fall back to external-only
+                return self._apply_external_only(application, profile)
+        except Exception as e:
+            logger.error(f"Greenhouse API error: {e}")
+            return self._apply_external_only(application, profile)
+
+    def _apply_lever(
+        self, application: ApplicationRecord, profile: UserProfile
+    ) -> bool:
+        """Submit application via Lever Postings API."""
+        import re
+        import requests
+
+        job = application.job
+        # Extract slug and posting ID from external_id: lever_{slug}_{id}
+        match = re.match(r"lever_(.+?)_([a-f0-9-]+)$", job.external_id)
+        if not match:
+            logger.warning(f"Cannot parse Lever ID: {job.external_id}")
+            return self._apply_external_only(application, profile)
+
+        slug = match.group(1)
+        posting_id = match.group(2)
+        url = f"https://api.lever.co/v0/postings/{slug}/{posting_id}/apply"
+
+        form_data = {
+            "name": f"{profile.first_name} {profile.last_name}".strip(),
+            "email": profile.email,
+            "phone": profile.phone,
+            "org": "N/A",
+        }
+
+        if profile.linkedin_url:
+            form_data["urls[LinkedIn]"] = profile.linkedin_url
+
+        # Add cover letter as comments
+        if application.cover_letter_path:
+            from pathlib import Path
+            cp = Path(application.cover_letter_path)
+            if cp.exists():
+                form_data["comments"] = cp.read_text()[:5000]
+
+        files = {}
+        resume_path = application.tailored_resume_path or profile.resume_path
+        if resume_path:
+            from pathlib import Path
+            rp = Path(resume_path)
+            if rp.exists():
+                files["resume"] = (rp.name, rp.read_bytes(), "application/pdf")
+
+        try:
+            resp = requests.post(url, data=form_data, files=files, timeout=30)
+            if resp.status_code in (200, 201):
+                logger.info(
+                    f"Lever API: submitted to {job.title} at {job.company}"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"Lever API {resp.status_code}: {resp.text[:200]}"
+                )
+                return self._apply_external_only(application, profile)
+        except Exception as e:
+            logger.error(f"Lever API error: {e}")
+            return self._apply_external_only(application, profile)
 
     def _apply_linkedin(
         self, application: ApplicationRecord, profile: UserProfile

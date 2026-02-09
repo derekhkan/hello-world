@@ -1,4 +1,4 @@
-"""Job board scrapers for LinkedIn, Indeed, Glassdoor, ZipRecruiter, executive recruiting firms, and career pages."""
+"""Job board scrapers for LinkedIn, Indeed, Glassdoor, ZipRecruiter, executive recruiting firms, career pages, and ATS APIs."""
 
 from job_agent.scrapers.base import BaseScraper
 from job_agent.scrapers.linkedin import LinkedInScraper
@@ -10,6 +10,8 @@ from job_agent.scrapers.kornferry import KornFerryScraper
 from job_agent.scrapers.spencerstuart import SpencerStuartScraper
 from job_agent.scrapers.russellreynolds import RussellReynoldsScraper
 from job_agent.scrapers.careerpages import CareerPageScraper
+from job_agent.scrapers.greenhouse_ats import GreenhouseScraper
+from job_agent.scrapers.lever_ats import LeverScraper
 
 SCRAPERS = {
     "linkedin": LinkedInScraper,
@@ -21,6 +23,8 @@ SCRAPERS = {
     "spencerstuart": SpencerStuartScraper,
     "russellreynolds": RussellReynoldsScraper,
     "careerpages": CareerPageScraper,
+    "greenhouse": GreenhouseScraper,
+    "lever": LeverScraper,
 }
 
 __all__ = [
@@ -34,5 +38,7 @@ __all__ = [
     "SpencerStuartScraper",
     "RussellReynoldsScraper",
     "CareerPageScraper",
+    "GreenhouseScraper",
+    "LeverScraper",
     "SCRAPERS",
 ]
