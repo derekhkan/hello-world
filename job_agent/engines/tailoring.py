@@ -70,13 +70,14 @@ Key Requirements:
 """
 
 COVER_LETTER_PROMPT = """\
-You are an expert career coach. Write a compelling cover letter.
+You are an expert career coach. Adapt the candidate's base cover letter for a specific role.
 
 ## Candidate
 Name: {name}
 Current/Recent Title: {current_title}
-Key Skills: {skills}
-Notable Experience: {experience_highlights}
+
+## Base Cover Letter (candidate's own voice - preserve tone and style):
+{base_cover_letter}
 
 ## Target Job
 Title: {job_title}
@@ -85,14 +86,15 @@ Description:
 {description}
 
 ## Instructions
-- Write a professional, personalized cover letter (250-400 words)
-- Reference specific aspects of the company and role
-- Connect candidate experience to job requirements
-- Show enthusiasm without being generic
-- Use a conversational yet professional tone
+- Start from the base cover letter above and adapt it for this specific role and company
+- Preserve the candidate's authentic voice and tone throughout
+- Add 1-2 sentences connecting their experience specifically to this company and role
+- Reference specific aspects of the company or job description naturally
+- Keep it concise (250-400 words)
 - Do NOT use cliches like "I am writing to express my interest"
+- Do NOT fabricate experience - only reference what's in the base letter and resume
 
-## Cover Letter:
+## Tailored Cover Letter:
 """
 
 
@@ -195,7 +197,7 @@ class TailoringEngine:
     def generate_cover_letter(
         self, job: JobListing, profile: UserProfile
     ) -> str:
-        """Generate a tailored cover letter for a specific job."""
+        """Generate a tailored cover letter based on the candidate's base letter."""
         current_title = ""
         if profile.experience:
             current_exp = next(
@@ -203,18 +205,22 @@ class TailoringEngine:
             )
             current_title = current_exp.title
 
-        experience_highlights = []
-        for exp in profile.experience[:3]:
-            if exp.highlights:
-                experience_highlights.extend(exp.highlights[:2])
+        # Load base cover letter
+        base_cover_letter = ""
+        cover_letter_base_path = self.config.data_dir / "cover_letter.txt"
+        if cover_letter_base_path.exists():
+            base_cover_letter = cover_letter_base_path.read_text()
+        elif Path("/opt/job-agent/data/cover_letter.txt").exists():
+            base_cover_letter = Path("/opt/job-agent/data/cover_letter.txt").read_text()
+
+        if not base_cover_letter:
+            # Fallback: construct from profile
+            base_cover_letter = profile.summary
 
         prompt = COVER_LETTER_PROMPT.format(
             name=f"{profile.first_name} {profile.last_name}",
             current_title=current_title,
-            skills=", ".join(profile.skills[:15]),
-            experience_highlights="\n".join(
-                f"- {h}" for h in experience_highlights[:6]
-            ),
+            base_cover_letter=base_cover_letter,
             job_title=job.title,
             company=job.company,
             description=job.description[:3000],

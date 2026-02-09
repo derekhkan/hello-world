@@ -65,7 +65,7 @@ class LinkedInScraper(BaseScraper):
         super().__init__(config)
 
     def _build_search_params(
-        self, preferences: SearchPreferences, start: int = 0
+        self, preferences: SearchPreferences, start: int = 0, location: str = ""
     ) -> dict:
         """Build LinkedIn search query parameters."""
         params: dict = {
@@ -74,7 +74,9 @@ class LinkedInScraper(BaseScraper):
             "sortBy": "DD",  # Sort by date
         }
 
-        if preferences.locations:
+        if location:
+            params["location"] = location
+        elif preferences.locations:
             params["location"] = preferences.locations[0]
 
         if preferences.experience_levels:
@@ -168,58 +170,79 @@ class LinkedInScraper(BaseScraper):
             logger.warning(f"Failed to parse LinkedIn card: {e}")
             return None
 
+    def _search_pages(
+        self,
+        term: str,
+        location: str,
+        preferences: SearchPreferences,
+        jobs: list[JobListing],
+        seen_ids: set[str],
+        max_pages: int = 2,
+    ) -> None:
+        """Search LinkedIn for a single term+location combo across pages."""
+        for page in range(max_pages):
+            start = page * 25
+            params = self._build_search_params(preferences, start, location=location)
+            params["keywords"] = term
+
+            loc_label = location or "anywhere"
+            logger.info(f"LinkedIn: '{term}' in '{loc_label}' page {page + 1}")
+
+            try:
+                soup = self._get(self.BASE_URL, params=params)
+            except Exception as e:
+                logger.error(f"LinkedIn search failed: '{term}' in '{loc_label}': {e}")
+                break
+
+            cards = soup.select("li")
+            if not cards:
+                break
+
+            new_on_page = 0
+            for card in cards:
+                listing = self._parse_listing(card)
+                if listing and listing.external_id not in seen_ids:
+                    seen_ids.add(listing.external_id)
+                    jobs.append(listing)
+                    new_on_page += 1
+
+            logger.info(
+                f"Found {len(cards)} cards, {new_on_page} new, "
+                f"{len(jobs)} total unique jobs"
+            )
+
+            if new_on_page == 0:
+                break
+
     def search_jobs(
-        self, preferences: SearchPreferences, max_pages: int = 3
+        self, preferences: SearchPreferences, max_pages: int = 2
     ) -> list[JobListing]:
-        """Search LinkedIn for job listings, running a separate search per keyword."""
+        """Search LinkedIn across all locations and keywords, plus target companies."""
         jobs: list[JobListing] = []
         seen_ids: set[str] = set()
 
-        # Search each keyword/title individually for better results
+        # Build unique search terms from keywords + titles
         search_terms = list(preferences.keywords)
         for title in preferences.titles:
             if title.lower() not in [k.lower() for k in search_terms]:
                 search_terms.append(title)
 
-        for term in search_terms:
-            for page in range(max_pages):
-                start = page * 25
-                params = self._build_search_params(preferences, start)
-                # Override keywords with single search term
-                params["keywords"] = term
+        # Search each location separately
+        locations = preferences.locations if preferences.locations else [""]
 
-                logger.info(
-                    f"LinkedIn search: '{term}' page {page + 1}"
-                )
+        for location in locations:
+            for term in search_terms:
+                self._search_pages(term, location, preferences, jobs, seen_ids, max_pages)
 
-                try:
-                    soup = self._get(self.BASE_URL, params=params)
-                except Exception as e:
-                    logger.error(f"LinkedIn search failed for '{term}' page {page + 1}: {e}")
-                    break
+        # Company-targeted searches
+        if hasattr(preferences, "companies_target") and preferences.companies_target:
+            for company in preferences.companies_target:
+                for location in locations:
+                    self._search_pages(
+                        company, location, preferences, jobs, seen_ids, max_pages=1
+                    )
 
-                cards = soup.select("li")
-                if not cards:
-                    logger.info(f"No more results for '{term}'.")
-                    break
-
-                new_on_page = 0
-                for card in cards:
-                    listing = self._parse_listing(card)
-                    if listing and listing.external_id not in seen_ids:
-                        seen_ids.add(listing.external_id)
-                        jobs.append(listing)
-                        new_on_page += 1
-
-                logger.info(
-                    f"Found {len(cards)} cards, {new_on_page} new, "
-                    f"{len(jobs)} total unique jobs"
-                )
-
-                # Stop paging if no new results on this page
-                if new_on_page == 0:
-                    break
-
+        logger.info(f"LinkedIn total: {len(jobs)} unique jobs across {len(locations)} locations")
         return jobs
 
     def get_job_details(self, job: JobListing) -> JobListing:

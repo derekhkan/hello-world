@@ -71,6 +71,10 @@ class ApplicatorEngine:
                 JobBoard.INDEED: self._apply_indeed,
                 JobBoard.GLASSDOOR: self._apply_glassdoor,
                 JobBoard.ZIPRECRUITER: self._apply_ziprecruiter,
+                JobBoard.HEIDRICK: self._apply_external_only,
+                JobBoard.KORNFERRY: self._apply_external_only,
+                JobBoard.SPENCERSTUART: self._apply_external_only,
+                JobBoard.RUSSELLREYNOLDS: self._apply_external_only,
             }.get(job.board)
 
             if handler is None:
@@ -96,6 +100,22 @@ class ApplicatorEngine:
             logger.error(f"Application error for {job.title}: {e}")
 
         return application
+
+    def _apply_external_only(
+        self, application: ApplicationRecord, profile: UserProfile
+    ) -> bool:
+        """Handle executive recruiting firm listings - log for manual follow-up."""
+        job = application.job
+        application.notes = (
+            f"Executive recruiting listing - apply directly at: {job.url}\n"
+            f"Board: {job.board.value}\n"
+            f"These positions typically require direct contact with the recruiting firm."
+        )
+        logger.info(
+            f"External-only listing from {job.board.value}: {job.title} at {job.company}. "
+            f"URL saved for manual follow-up: {job.url}"
+        )
+        return True
 
     def _apply_linkedin(
         self, application: ApplicationRecord, profile: UserProfile

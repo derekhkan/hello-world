@@ -14,6 +14,10 @@ class JobBoard(str, enum.Enum):
     INDEED = "indeed"
     GLASSDOOR = "glassdoor"
     ZIPRECRUITER = "ziprecruiter"
+    HEIDRICK = "heidrick"
+    KORNFERRY = "kornferry"
+    SPENCERSTUART = "spencerstuart"
+    RUSSELLREYNOLDS = "russellreynolds"
 
 
 class ApplicationStatus(str, enum.Enum):
@@ -112,6 +116,7 @@ class SearchPreferences(BaseModel):
     experience_levels: list[ExperienceLevel] = Field(default_factory=list)
     job_types: list[JobType] = Field(default_factory=lambda: [JobType.FULL_TIME])
     salary_min: Optional[int] = None
+    companies_target: list[str] = Field(default_factory=list)
     companies_include: list[str] = Field(default_factory=list)
     companies_exclude: list[str] = Field(default_factory=list)
     industries: list[str] = Field(default_factory=list)

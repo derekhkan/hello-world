@@ -130,10 +130,8 @@ search:
     - "COO"
     - "VP Growth"
   locations:
-    - "Irvine, CA"
-    - "Los Angeles, CA"
     - "Orange County, CA"
-    - "New York, NY"
+    - "Los Angeles, CA"
     - "Remote"
   remote_only: false
   work_modes:
@@ -147,6 +145,7 @@ search:
   job_types:
     - full_time
   salary_min: 200000
+  companies_target: []
   companies_exclude: []
   industries:
     - "Technology"
@@ -159,6 +158,10 @@ search:
   posted_within_days: 7
   boards:
     - linkedin
+    - heidrick
+    - kornferry
+    - spencerstuart
+    - russellreynolds
   max_applications_per_day: 25
   auto_apply: false
 
