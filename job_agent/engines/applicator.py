@@ -75,6 +75,7 @@ class ApplicatorEngine:
                 JobBoard.KORNFERRY: self._apply_external_only,
                 JobBoard.SPENCERSTUART: self._apply_external_only,
                 JobBoard.RUSSELLREYNOLDS: self._apply_external_only,
+                JobBoard.CAREERPAGES: self._apply_external_only,
             }.get(job.board)
 
             if handler is None:

@@ -18,6 +18,7 @@ class JobBoard(str, enum.Enum):
     KORNFERRY = "kornferry"
     SPENCERSTUART = "spencerstuart"
     RUSSELLREYNOLDS = "russellreynolds"
+    CAREERPAGES = "careerpages"
 
 
 class ApplicationStatus(str, enum.Enum):
@@ -117,6 +118,7 @@ class SearchPreferences(BaseModel):
     job_types: list[JobType] = Field(default_factory=lambda: [JobType.FULL_TIME])
     salary_min: Optional[int] = None
     companies_target: list[str] = Field(default_factory=list)
+    companies_per_run: int = 50  # rotate through target companies in daily batches
     companies_include: list[str] = Field(default_factory=list)
     companies_exclude: list[str] = Field(default_factory=list)
     industries: list[str] = Field(default_factory=list)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import re
 import urllib.parse
@@ -234,13 +235,26 @@ class LinkedInScraper(BaseScraper):
             for term in search_terms:
                 self._search_pages(term, location, preferences, jobs, seen_ids, max_pages)
 
-        # Company-targeted searches
-        if hasattr(preferences, "companies_target") and preferences.companies_target:
-            for company in preferences.companies_target:
-                for location in locations:
-                    self._search_pages(
-                        company, location, preferences, jobs, seen_ids, max_pages=1
-                    )
+        # Company-targeted searches (daily rotation, no location filter)
+        if preferences.companies_target:
+            companies = preferences.companies_target
+            per_run = getattr(preferences, "companies_per_run", 50) or len(companies)
+            if per_run < len(companies):
+                total_batches = math.ceil(len(companies) / per_run)
+                batch_idx = datetime.utcnow().timetuple().tm_yday % total_batches
+                batch_start = batch_idx * per_run
+                batch = companies[batch_start : batch_start + per_run]
+                logger.info(
+                    f"LinkedIn company search: batch {batch_idx + 1}/{total_batches} "
+                    f"({len(batch)} companies)"
+                )
+            else:
+                batch = companies
+
+            for company in batch:
+                self._search_pages(
+                    company, "", preferences, jobs, seen_ids, max_pages=1
+                )
 
         logger.info(f"LinkedIn total: {len(jobs)} unique jobs across {len(locations)} locations")
         return jobs
