@@ -1,0 +1,125 @@
+# Job Application Agent - Sample Configuration
+# Copy this to ~/.job-agent/config.yaml and customize
+
+profile:
+  first_name: "Jane"
+  last_name: "Doe"
+  email: "jane.doe@email.com"
+  phone: "+1-555-123-4567"
+  location: "San Francisco, CA"
+  linkedin_url: "https://linkedin.com/in/janedoe"
+  github_url: "https://github.com/janedoe"
+  portfolio_url: "https://janedoe.dev"
+  summary: "Full-stack engineer with 5 years of experience building scalable web applications."
+  skills:
+    - Python
+    - JavaScript
+    - TypeScript
+    - React
+    - Node.js
+    - PostgreSQL
+    - AWS
+    - Docker
+    - Kubernetes
+  resume_path: "~/resume.txt"
+  willing_to_relocate: false
+  work_authorization: "authorized"
+  desired_salary_min: 120000
+  desired_salary_max: 180000
+
+  education:
+    - institution: "Stanford University"
+      degree: "BS"
+      field_of_study: "Computer Science"
+      start_date: "2015-09"
+      end_date: "2019-06"
+      gpa: 3.8
+      highlights:
+        - "Dean's List"
+        - "CS Senior Thesis on distributed systems"
+
+  experience:
+    - company: "TechCorp"
+      title: "Senior Software Engineer"
+      start_date: "2022-01"
+      current: true
+      description: "Leading backend platform team"
+      highlights:
+        - "Designed and built microservices handling 10M requests/day"
+        - "Reduced API latency by 40% through caching strategy"
+        - "Mentored 3 junior engineers"
+      technologies:
+        - Python
+        - Go
+        - PostgreSQL
+        - Redis
+        - Kubernetes
+
+    - company: "StartupXYZ"
+      title: "Software Engineer"
+      start_date: "2019-07"
+      end_date: "2021-12"
+      description: "Full-stack development"
+      highlights:
+        - "Built real-time data pipeline processing 1M events/hour"
+        - "Led migration from monolith to microservices"
+      technologies:
+        - Python
+        - React
+        - AWS
+        - Docker
+
+search:
+  keywords:
+    - "software engineer"
+    - "backend engineer"
+    - "full stack engineer"
+  titles:
+    - "Software Engineer"
+    - "Senior Software Engineer"
+    - "Backend Engineer"
+    - "Full Stack Engineer"
+  locations:
+    - "San Francisco, CA"
+    - "New York, NY"
+    - "Remote"
+  remote_only: false
+  work_modes:
+    - remote
+    - hybrid
+  experience_levels:
+    - mid
+    - senior
+  job_types:
+    - full_time
+  salary_min: 120000
+  companies_exclude:
+    - "SpamCompany"
+  posted_within_days: 7
+  boards:
+    - linkedin
+    - indeed
+    - glassdoor
+    - ziprecruiter
+  max_applications_per_day: 25
+  auto_apply: false
+
+llm:
+  provider: "openai"
+  model: "gpt-4o"
+  temperature: 0.7
+  max_tokens: 2000
+
+browser:
+  headless: true
+  timeout: 30
+
+notifications:
+  enabled: false
+  notify_on_apply: true
+  notify_on_error: true
+  daily_summary: true
+
+rate_limit_delay: 2.0
+max_retries: 3
+dedup_window_days: 30

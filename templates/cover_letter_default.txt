@@ -1,0 +1,12 @@
+Dear Hiring Manager,
+
+I am excited to apply for the {{ job_title }} position at {{ company }}. With my background in {{ skills_summary }}, I believe I would be a strong addition to your team.
+
+{{ body }}
+
+I would welcome the opportunity to discuss how my experience aligns with your needs. Thank you for your consideration.
+
+Best regards,
+{{ first_name }} {{ last_name }}
+{{ email }}
+{{ phone }}

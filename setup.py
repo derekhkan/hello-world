@@ -1,0 +1,34 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="job-application-agent",
+    version="1.0.0",
+    description="Automated job application agent across top job boards",
+    packages=find_packages(),
+    python_requires=">=3.10",
+    install_requires=[
+        "requests>=2.31.0",
+        "beautifulsoup4>=4.12.0",
+        "selenium>=4.15.0",
+        "webdriver-manager>=4.0.0",
+        "playwright>=1.40.0",
+        "pydantic>=2.5.0",
+        "pydantic-settings>=2.1.0",
+        "jinja2>=3.1.0",
+        "openai>=1.6.0",
+        "rich>=13.7.0",
+        "click>=8.1.0",
+        "schedule>=1.2.0",
+        "sqlalchemy>=2.0.0",
+        "aiohttp>=3.9.0",
+        "fake-useragent>=1.4.0",
+        "python-dotenv>=1.0.0",
+        "cryptography>=41.0.0",
+        "PyYAML>=6.0.0",
+    ],
+    entry_points={
+        "console_scripts": [
+            "job-agent=job_agent.cli:main",
+        ],
+    },
+)
