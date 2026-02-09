@@ -568,7 +568,11 @@ browser:
   timeout: 30
 
 notifications:
-  enabled: false
+  enabled: true
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_email: "derek.h.kan@gmail.com"
+  recipient_email: "derek.h.kan@gmail.com"
   notify_on_apply: true
   notify_on_error: true
   daily_summary: true
