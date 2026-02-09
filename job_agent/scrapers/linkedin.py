@@ -169,38 +169,56 @@ class LinkedInScraper(BaseScraper):
             return None
 
     def search_jobs(
-        self, preferences: SearchPreferences, max_pages: int = 5
+        self, preferences: SearchPreferences, max_pages: int = 3
     ) -> list[JobListing]:
-        """Search LinkedIn for job listings."""
+        """Search LinkedIn for job listings, running a separate search per keyword."""
         jobs: list[JobListing] = []
         seen_ids: set[str] = set()
 
-        for page in range(max_pages):
-            start = page * 25
-            params = self._build_search_params(preferences, start)
+        # Search each keyword/title individually for better results
+        search_terms = list(preferences.keywords)
+        for title in preferences.titles:
+            if title.lower() not in [k.lower() for k in search_terms]:
+                search_terms.append(title)
 
-            logger.info(
-                f"LinkedIn search page {page + 1}: keywords={preferences.keywords}"
-            )
+        for term in search_terms:
+            for page in range(max_pages):
+                start = page * 25
+                params = self._build_search_params(preferences, start)
+                # Override keywords with single search term
+                params["keywords"] = term
 
-            try:
-                soup = self._get(self.BASE_URL, params=params)
-            except Exception as e:
-                logger.error(f"LinkedIn search failed on page {page + 1}: {e}")
-                break
+                logger.info(
+                    f"LinkedIn search: '{term}' page {page + 1}"
+                )
 
-            cards = soup.select("li")
-            if not cards:
-                logger.info("No more LinkedIn results found.")
-                break
+                try:
+                    soup = self._get(self.BASE_URL, params=params)
+                except Exception as e:
+                    logger.error(f"LinkedIn search failed for '{term}' page {page + 1}: {e}")
+                    break
 
-            for card in cards:
-                listing = self._parse_listing(card)
-                if listing and listing.external_id not in seen_ids:
-                    seen_ids.add(listing.external_id)
-                    jobs.append(listing)
+                cards = soup.select("li")
+                if not cards:
+                    logger.info(f"No more results for '{term}'.")
+                    break
 
-            logger.info(f"Found {len(cards)} cards, {len(jobs)} total unique jobs")
+                new_on_page = 0
+                for card in cards:
+                    listing = self._parse_listing(card)
+                    if listing and listing.external_id not in seen_ids:
+                        seen_ids.add(listing.external_id)
+                        jobs.append(listing)
+                        new_on_page += 1
+
+                logger.info(
+                    f"Found {len(cards)} cards, {new_on_page} new, "
+                    f"{len(jobs)} total unique jobs"
+                )
+
+                # Stop paging if no new results on this page
+                if new_on_page == 0:
+                    break
 
         return jobs
 
