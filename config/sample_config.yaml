@@ -121,6 +121,12 @@ search:
     - "COO startup"
     - "VP growth"
     - "general manager technology"
+    - "SVP operations"
+    - "SVP product"
+    - "senior vice president"
+    - "senior director product"
+    - "senior director operations"
+    - "senior director growth"
   titles:
     - "VP Operations"
     - "Vice President Product"
@@ -129,6 +135,9 @@ search:
     - "Head of Growth"
     - "COO"
     - "VP Growth"
+    - "SVP"
+    - "Senior Vice President"
+    - "Senior Director"
   locations:
     - "Orange County, CA"
     - "Los Angeles, CA"

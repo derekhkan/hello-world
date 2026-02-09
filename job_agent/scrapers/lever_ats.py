@@ -156,7 +156,7 @@ class LeverScraper(BaseScraper):
             for kw in [
                 "vp", "vice president", "head of", "director", "coo", "cpo",
                 "cmo", "cro", "chief", "general manager", "svp", "evp",
-                "president",
+                "president", "senior director",
             ]
         )
 
