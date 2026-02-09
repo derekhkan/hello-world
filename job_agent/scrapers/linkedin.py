@@ -131,11 +131,14 @@ class LinkedInScraper(BaseScraper):
 
             url = link_el.get("href", "").split("?")[0]
             external_id = ""
-            id_match = re.search(r"/view/([^/?]+)", url)
-            if id_match:
-                external_id = id_match.group(1)
-            elif re.search(r"-(\d+)$", url):
-                external_id = re.search(r"-(\d+)$", url).group(1)
+            # Always extract the numeric ID from the end of the URL
+            numeric_match = re.search(r"-(\d+)$", url)
+            if numeric_match:
+                external_id = numeric_match.group(1)
+            else:
+                id_match = re.search(r"/view/([^/?]+)", url)
+                if id_match:
+                    external_id = id_match.group(1)
 
             if not external_id:
                 return None
@@ -204,8 +207,12 @@ class LinkedInScraper(BaseScraper):
     def get_job_details(self, job: JobListing) -> JobListing:
         """Fetch full job description from LinkedIn."""
         try:
-            url = self.DETAIL_URL.format(job_id=job.external_id)
-            soup = self._get(url)
+            # Try the detail API with numeric ID first, fall back to job URL
+            try:
+                url = self.DETAIL_URL.format(job_id=job.external_id)
+                soup = self._get(url)
+            except Exception:
+                soup = self._get(job.url)
 
             desc_el = soup.select_one(".description__text")
             if desc_el:
