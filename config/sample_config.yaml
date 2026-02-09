@@ -1,86 +1,146 @@
-# Job Application Agent - Sample Configuration
-# Copy this to ~/.job-agent/config.yaml and customize
+# Job Application Agent - Derek Kan Configuration
 
 profile:
-  first_name: "Jane"
-  last_name: "Doe"
-  email: "jane.doe@email.com"
-  phone: "+1-555-123-4567"
-  location: "San Francisco, CA"
-  linkedin_url: "https://linkedin.com/in/janedoe"
-  github_url: "https://github.com/janedoe"
-  portfolio_url: "https://janedoe.dev"
-  summary: "Full-stack engineer with 5 years of experience building scalable web applications."
+  first_name: "Derek"
+  last_name: "Kan"
+  email: "derek.h.kan@gmail.com"
+  phone: "(917) 697-0605"
+  location: "Irvine, CA"
+  linkedin_url: "https://linkedin.com/in/derekhkan"
+  github_url: ""
+  portfolio_url: ""
+  summary: "Experienced product, growth and operations leader with a track record of building commercially successful tech in startups and global companies. Skilled in go-to-market strategy, cross-functional team leadership, product development, and data-driven execution. Scaled platform revenue 28x at Axiom Law, reversed a 5-year decline at Monster.com, and currently Head of Operations at Orderly in Web3."
   skills:
-    - Python
-    - JavaScript
-    - TypeScript
-    - React
-    - Node.js
-    - PostgreSQL
-    - AWS
-    - Docker
-    - Kubernetes
-  resume_path: "~/resume.txt"
+    - Go-to-Market Strategy
+    - Product Management
+    - Revenue Operations
+    - P&L Ownership
+    - Organizational Design
+    - Product-Led Growth
+    - Monetization Strategy
+    - Customer Acquisition & Retention
+    - Market Expansion
+    - Strategic Partnerships
+    - Cross-Functional Leadership
+    - Data-Driven Decision Making
+    - Executive Stakeholder Management
+    - Agile / Scrum
+    - Web3 / DeFi
+    - Ad Tech
+    - Enterprise SaaS
+    - Marketplace Platforms
+  resume_path: "/opt/job-agent/data/resume.txt"
   willing_to_relocate: false
   work_authorization: "authorized"
-  desired_salary_min: 120000
-  desired_salary_max: 180000
+  desired_salary_min: 200000
+  desired_salary_max: 350000
 
   education:
-    - institution: "Stanford University"
-      degree: "BS"
-      field_of_study: "Computer Science"
-      start_date: "2015-09"
-      end_date: "2019-06"
-      gpa: 3.8
-      highlights:
-        - "Dean's List"
-        - "CS Senior Thesis on distributed systems"
+    - institution: "Carnegie Mellon University"
+      degree: "B.Sc."
+      field_of_study: "Public Policy and Management, Minor in Business Administration"
+      start_date: "2002-09"
+      end_date: "2006-05"
 
   experience:
-    - company: "TechCorp"
-      title: "Senior Software Engineer"
-      start_date: "2022-01"
+    - company: "Orderly"
+      title: "Head of Operations"
+      start_date: "2024-10"
       current: true
-      description: "Leading backend platform team"
+      description: "Leading cross-functional operations across marketing, growth, business development, product, and HR at a leading decentralized exchange infrastructure company in Web3."
       highlights:
-        - "Designed and built microservices handling 10M requests/day"
-        - "Reduced API latency by 40% through caching strategy"
-        - "Mentored 3 junior engineers"
+        - "Led cross-functional operations setting operating cadence that aligned teams around builder adoption, trader growth, and trading volume"
+        - "Owned GTM operations supporting launch of 150+ decentralized exchanges built on Orderly One"
+        - "Reduced delivery cycles from 4+ weeks to 1-2 weeks across a globally distributed organization"
+        - "Drove 38% increase in organic reach and 133% lift in engagement through branded content strategy"
+        - "Launched key campaigns: Solana integration (+$17M TVL), OmniVault ($22M TVL)"
       technologies:
-        - Python
-        - Go
-        - PostgreSQL
-        - Redis
-        - Kubernetes
+        - Web3
+        - DeFi
+        - Cross-chain infrastructure
 
-    - company: "StartupXYZ"
-      title: "Software Engineer"
-      start_date: "2019-07"
-      end_date: "2021-12"
-      description: "Full-stack development"
+    - company: "JMG Advisors"
+      title: "Founder"
+      start_date: "2024-01"
+      current: true
+      description: "GTM, operations, and product strategy advisory for early- and growth-stage companies across legal tech, enterprise SaaS, and climate tech."
       highlights:
-        - "Built real-time data pipeline processing 1M events/hour"
-        - "Led migration from monolith to microservices"
+        - "Secured three cross-industry clients within first six months"
+        - "Advised on customer journey, growth strategy, enterprise GTM, and digital transformation"
+
+    - company: "Axiom Law"
+      title: "Vice President Product Management, Global"
+      start_date: "2021-07"
+      end_date: "2023-12"
+      description: "Head of Product for Axiom Platform with full P&L responsibility, product strategy, GTM, and revenue growth."
+      highlights:
+        - "Scaled platform revenue from $1M to $28M in two years"
+        - "Launched Access Legal Talent marketplace, grew from $1.5M to $12M revenue, contributing 21% of new business"
+        - "Introduced Opportunity Feed generating $13M in its first year"
       technologies:
-        - Python
-        - React
-        - AWS
-        - Docker
+        - Legal Tech
+        - Marketplace
+        - Enterprise SaaS
+
+    - company: "Monster Worldwide"
+      title: "Vice President Product Management, Global"
+      start_date: "2018-03"
+      end_date: "2021-07"
+      description: "Global Head of Product for Monster's B2C business serving 15-20M monthly users across 14 countries."
+      highlights:
+        - "Reversed 5-year user decline, driving 12% increase in monthly active users"
+        - "Led first full-site redesign in 15 years, boosting annual traffic to 300M+ visits"
+        - "Launched SearchMonster, a $50M+ enterprise SaaS product in 16 countries"
+        - "Managed 30-person global team and 18 agile teams"
+      technologies:
+        - Enterprise SaaS
+        - Job Marketplace
+        - Personalization
+
+    - company: "GroupM | WPP"
+      title: "Global Senior Director of Product Management"
+      start_date: "2015-07"
+      end_date: "2018-03"
+      description: "Head of Global Product Management for [m]Insights and Turbine platforms."
+      highlights:
+        - "Led B2B analytics platform underpinning $102B in media investment decisions"
+        - "Oversaw enterprise software rollout in 50 countries"
+        - "Led global product for Turbine, powering $1B+ in programmatic spend across 30 countries"
+      technologies:
+        - Ad Tech
+        - Analytics
+        - Programmatic
 
 search:
   keywords:
-    - "software engineer"
-    - "backend engineer"
-    - "full stack engineer"
+    - "head of operations"
+    - "VP operations"
+    - "VP product"
+    - "head of product"
+    - "chief operating officer"
+    - "head of growth"
+    - "VP growth"
+    - "GTM leader"
+    - "general manager"
   titles:
-    - "Software Engineer"
-    - "Senior Software Engineer"
-    - "Backend Engineer"
-    - "Full Stack Engineer"
+    - "Head of Operations"
+    - "VP Operations"
+    - "Vice President Operations"
+    - "Chief Operating Officer"
+    - "COO"
+    - "VP Product"
+    - "Vice President Product"
+    - "Head of Product"
+    - "Head of Growth"
+    - "VP Growth"
+    - "General Manager"
+    - "Director of Operations"
+    - "SVP Operations"
+    - "SVP Product"
   locations:
-    - "San Francisco, CA"
+    - "Irvine, CA"
+    - "Los Angeles, CA"
+    - "Orange County, CA"
     - "New York, NY"
     - "Remote"
   remote_only: false
@@ -88,19 +148,25 @@ search:
     - remote
     - hybrid
   experience_levels:
-    - mid
     - senior
+    - director
+    - vp
+    - executive
   job_types:
     - full_time
-  salary_min: 120000
-  companies_exclude:
-    - "SpamCompany"
+  salary_min: 200000
+  companies_exclude: []
+  industries:
+    - "Technology"
+    - "SaaS"
+    - "Web3"
+    - "Fintech"
+    - "Ad Tech"
+    - "Legal Tech"
+    - "Marketplace"
   posted_within_days: 7
   boards:
     - linkedin
-    - indeed
-    - glassdoor
-    - ziprecruiter
   max_applications_per_day: 25
   auto_apply: false
 

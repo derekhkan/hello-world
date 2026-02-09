@@ -1,0 +1,96 @@
+Derek Kan
+Irvine CA, 92602 | derek.h.kan@gmail.com | (917) 697-0605 | linkedin.com/in/derekhkan
+
+Operating Executive | Product, GTM, and Commercial Growth Leadership
+
+Experienced product, growth and operations leader with a track record of building commercially successful tech in startups and global companies. Skilled in go-to-market strategy, cross-functional team leadership, product development, and data-driven execution. Experienced in ad tech, developing enterprise software and marketing data platforms for VC-backed startups and global agencies. At Monster.com, revitalized the global consumer product line—reversing a 5-year decline and driving a 12% increase in monthly active users. At Axiom Law, launched a digital legal services marketplace across five countries, scaled platform revenue 28x, from $1M to $28M annually and expanded market share. Founded JMG Advisors in 2024 to advise startups on GTM, operations, and product strategy, engaging clients across legal tech, enterprise SaaS, and climate tech. Currently Head of Operations at Orderly, a leading decentralized exchange infrastructure in Web3.
+
+PROFESSIONAL EXPERIENCE
+
+Orderly | Irvine, CA (Remote)
+October 2024 – Present
+
+Head of Operations | October 2025 – Present
+- Led cross-functional operations across marketing, growth, business development, product, and HR, setting the operating cadence and execution rhythms that aligned teams around builder adoption, trader growth, and trading volume.
+- Owned GTM operations for user and builder growth, supporting the launch and scaling of 150+ decentralized exchanges built on Orderly One and exchange infrastructure.
+- Designed and scaled operating systems spanning planning, execution, performance tracking, and organizational design, reducing delivery cycles from 4+ weeks to 1–2 weeks across a globally distributed organization.
+- Served as execution owner translating company strategy into measurable outcomes across builder growth, active traders, and daily trading volume.
+
+Head of Growth & Marketing | Oct 2024 - Oct 2025
+- Lead a global marketing team of 28 across content, PR, ecosystem, design, growth, events, and product marketing functions—building a unified, cross-channel strategy to accelerate platform visibility and adoption.
+- Launched a branded content strategy on X.com, YouTube, and Instagram producing explainers, tutorials, AMAs, and podcasts. Drove a 38% increase in organic reach and 133% lift in engagement through audience-centric narratives.
+- Built and operationalized an ecosystem marketing framework that empowered partners, influencers, and community members to co-create marketing campaigns, scaling network effects and amplifying brand reach.
+- Partnered with Product and Engineering to ensure roadmap readiness, GTM alignment, and operational scalability for multi-chain launches including Solana, Monad, Abstract, and Sonic.
+- Launched key product marketing campaigns: Solana integration (+$17M TVL), OmniVault ($22M TVL), and Orderly One, a self-service tool that launched over 150 decentralized exchanges.
+
+JMG Advisors | Irvine, CA
+January 2024 - Present
+Founder
+- Founded JMG Advisors and secured three cross-industry clients within the first six months—demonstrating immediate traction in delivering growth, GTM, and operational strategy to early- and growth-stage companies.
+- Advised Demi Composting on customer journey and growth strategy; led direct engagement with super-users and delivered a structured framework that informed product and marketing decisions.
+- Partnered with Aerotrax Technologies on enterprise GTM strategy—shaped positioning, quantified value, and built a sales playbook that clarified path-to-market.
+- Led Latitude Legal through digital transformation planning—evaluated platform scalability, enhanced operational workflows, and advised on roadmap and vendor alignment.
+
+Axiom Law | New York, NY (Remote)
+July 2021 – December 2023
+Vice President Product Management, Global
+- Served as Head of Product Axiom Platform—responsible for full P&L, product strategy, GTM, revenue growth, and executive reporting to the C-suite and board.
+- Scaled platform revenue from $1M to $28M in two years by launching and growing digital services for enterprise legal clients.
+- Launched Access Legal Talent, a global legal talent marketplace serving F1000 clients—grew from $1.5M to $12M revenue, contributing 21% of Axiom's new business and expanding total addressable market.
+- Introduced Opportunity Feed, a verified legal job feed, generating $13M in its first year and unlocking new monetization channels across Axiom's 14,500-lawyer network.
+- Built and led a cross-functional team across product, marketing, sales, and operations to drive commercial outcomes and platform innovation.
+
+Monster Worldwide | Weston, MA (Remote)
+March 2018 – July 2021
+Vice President Product Management, Global
+- Global Head of Product for Monster's B2C business, overseeing Monster.com, Jobs.com, mobile apps, consumer platforms, and personalization engines serving 15–20M monthly users across 14 countries.
+- Led product strategy during a pivotal turnaround, rebuilding Monster's core user experience and launching its first full-site redesign in 15 years—driving a return to user growth and boosting annual traffic to 300M+ visits.
+- Scaled and managed a 30-person global team across product and UX; led 18 agile teams in collaboration with data science, architecture, and engineering to ship high-impact features.
+- Launched SearchMonster, a $50M+ enterprise SaaS product in 16 countries, enabling recruiters to search, engage, and manage candidate pipelines—diversifying revenue beyond core B2C channels.
+- Repositioned Monster as a competitive job marketplace by introducing auction-based pricing, performance-driven features, and dynamic personalization based on user behavior.
+
+GroupM | WPP | New York, NY
+July 2015 – March 2018
+
+Global Senior Director of Product Management, [m]Platform | Nov 2016 – March 2018
+- Head of Global Product Management for [m]Insights, a B2B analytics platform underpinning $102B in media investment decisions for GroupM's global client portfolio.
+- Led a 10-person international team across product, UX, and data science to develop AI-powered tools that surfaced actionable consumer insights and optimized media performance.
+- Oversaw enterprise software rollout in 50 countries, working cross-functionally with sales enablement, product marketing, and regional leadership to drive adoption at global scale.
+- Acted as a key partner to senior executives across North America, EMEA, and APAC—aligning roadmap priorities with strategic business objectives and regional needs.
+
+Global Senior Director of Product Management, Xaxis | July 2015 – Nov 2016
+- Previously led global product for Turbine, GroupM's real-time audience intelligence platform powering $1B+ in programmatic spend across 30 countries.
+
+Annalect | Omnicom Media Group | New York, NY
+March 2014 – July 2015
+Director of Product Management
+- Led product development for Annalect's data management platform, aligning analysts, traders, and data scientists to centralize media intelligence.
+- Spearheaded strategy for the Media Decision Engine, enabling real-time bid pricing using audience and contextual signals across RTB and DSP ecosystems.
+
+Medialets (Acquired by GroupM) | New York, NY
+May 2013 – March 2014
+Product Director
+- First product hire at Medialets; led end-to-end development of Servo, a self-serve B2B platform enabling marketers to launch mobile campaigns across iOS and Android.
+- Scaled the product from concept to 100M+ daily impressions within a year by driving agile adoption, streamlining operations, and transforming the business from managed service to SaaS.
+
+PulsePoint (Acquired by Internet Brands) | New York, NY
+October 2006 – May 2013
+Director of Product Management
+- Rose from reporting coordinator to Product Director, building a deep understanding of the business from the ground up and ultimately owning a $15M P&L across RTB exchange, video RTB, ad serving, and email marketing platforms.
+- Led the launch of a social publishing platform and played a key role in M&A integration—shaping org design and product strategy during the Datran Media and ContextWeb merger.
+
+ADVISORY POSITIONS
+- Core Contributor | WOO Network, 2025
+- Product Evangelist | OriginProtocol, 2018
+- Advisor | Emissary.io, 2016 – 2018
+- Committee Member | IAB | 2013 – 2018
+- Chair | Pursuit, Partnership & Fundraising Committee, 2016
+- Board of Directors | Hunter College High School Alumnae/i Association, 2010 – 2013
+
+EDUCATION
+Carnegie Mellon University, Pittsburgh, PA
+B.Sc. in Public Policy and Management, Minor in Business Administration
+Graduated May 2006
+
+SKILLS
+Operating Strategy, Go-to-Market Execution, Product & Platform Leadership, Revenue Operations, P&L Ownership, Organizational Design, Operating Cadence & KPIs, Product-Led Growth (PLG), Monetization Strategy, Customer Acquisition & Retention, Market Expansion, Strategic Partnerships, Roadmap Execution, Executive Stakeholder Management, Data-Driven Decision Making
