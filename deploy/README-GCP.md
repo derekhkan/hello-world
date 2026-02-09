@@ -11,7 +11,7 @@
 ```bash
 # Login and set project
 gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
+gcloud config set project job-application-agent-486905
 ```
 
 ## Step 2: Prepare your config
