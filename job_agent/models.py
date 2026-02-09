@@ -79,9 +79,9 @@ class WorkExperience(BaseModel):
 
 
 class UserProfile(BaseModel):
-    first_name: str
-    last_name: str
-    email: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
     phone: str = ""
     location: str = ""
     linkedin_url: str = ""
