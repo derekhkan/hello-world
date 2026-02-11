@@ -28,6 +28,7 @@ from instagram_agent.content_generator import (
     ContentGenerator,
     GenerationConfig,
 )
+from instagram_agent.quotes import DAD_STRENGTH_QUOTES
 
 logger = logging.getLogger(__name__)
 
@@ -313,12 +314,29 @@ class ThemePlanner:
             "day_num": day_num,
         }
 
+        # 50/50 mix: half theme-based templates, half standalone quotes
+        use_quote = random.random() < 0.5
+
+        if use_quote:
+            # Pick a standalone quote from the 500-quote bank
+            quotes = list(DAD_STRENGTH_QUOTES)
+            random.shuffle(quotes)
+            for q in quotes:
+                if q not in used:
+                    return q
+
+        # Theme-based template
         candidates = list(pool)
         random.shuffle(candidates)
         for template in candidates:
             caption = template.format(**fill)
             if caption not in used:
                 return caption
+
+        # Fallback to any unused quote
+        for q in DAD_STRENGTH_QUOTES:
+            if q not in used:
+                return q
 
         return candidates[0].format(**fill)
 
@@ -328,7 +346,9 @@ class ThemePlanner:
         elif ctype == "story":
             return self._generator.generate_story(text=caption)
         elif ctype == "reel":
-            slides = [caption, "Stay locked in.", "Show up. Every day."]
+            # Pick 2 random quotes for the extra slides
+            extras = random.sample(DAD_STRENGTH_QUOTES, min(2, len(DAD_STRENGTH_QUOTES)))
+            slides = [caption] + extras
             return self._generator.generate_reel(texts=slides)
         else:
             raise ValueError(f"Unknown content type: {ctype}")
