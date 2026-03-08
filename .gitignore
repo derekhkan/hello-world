@@ -1,4 +1,6 @@
 # Secrets
+.env
+.env.*
 config.yaml
 *.session
 *.json.enc
